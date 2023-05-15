@@ -37,13 +37,13 @@ def parse_measurements_csv(path: Union[str, Path]) -> List[Track]:
         ):
             # In practice, we might need to consult an external database to
             # retrieve the (lat, lon) coordinates. In this case, they have
-            # already been included in the `measurements_file`.
+            # already been included in the `measurements.csv` input file.
             measurements = [
                 Measurement(
                     lat=row['celldb.wgs84.lat'],
                     lon=row['celldb.wgs84.lon'],
                     timestamp=row['timestamp'],
-                    # For now, we just store the entire `row` as the `source`,
+                    # For now, we just store the entire `row` under `extra`,
                     # even though this leads to some duplicate data.
                     extra=row
                 ) for row in group
