@@ -3,8 +3,7 @@ from itertools import groupby
 from pathlib import Path
 from typing import List, Union
 
-from telcell.data.models.measurement import Measurement
-from telcell.data.models.track import Track
+from telcell.data.models import Measurement, Track
 
 
 def parse_measurements_csv(path: Union[str, Path]) -> List[Track]:
