@@ -14,3 +14,5 @@ jobs:
         run: pip install -r requirements.txt -r test-requirements.txt
       - name: run tests
         run: coverage run --branch --source telcell --module pytest --strict-markers tests/
+      - name: report coverage
+        run: coverage report
