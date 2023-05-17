@@ -29,12 +29,12 @@ class Track:
     """
     A history of measurements for a single device.
 
-    :param person: The owner of the device
-    :param device: The name of the device
-    :param measurements: A series of measurements ordered by timestamp
+    :param owner: The owner of the device. Can be anything with a simcard.
+    :param name: The name of the device.
+    :param measurements: A series of measurements ordered by timestamp.
     """
-    person: str
-    device: str
+    owner: str
+    name: str
     measurements: Sequence[Measurement]
 
     def __len__(self) -> int:
