@@ -1,5 +1,3 @@
-import random
-
 from telcell.data.models import Track
 
 
@@ -9,10 +7,9 @@ class BasicModel:
     Other models can use this as a template for more sophisticated methods.
     """
 
-    @staticmethod
-    def predict(track_a: Track, track_b: Track, background_info) -> float:
+    def predict(self, track_a: Track, track_b: Track, background_info=None) -> float:
         """
-        Gives random LR that two tracks belong to the same instance.
-        Returns 1 LR for two tracks.
+        Gives LR that two tracks belong to the same instance.
+        Returns 1 LR for two tracks that is alwoys 1.
         """
-        return random.random()
+        return 1.0
