@@ -40,8 +40,8 @@ def parse_measurements_csv(path: Union[str, Path]) -> List[Track]:
             # already been included in the `measurements.csv` input file.
             measurements = [
                 Measurement(
-                    lat=row['celldb.wgs84.lat'],
-                    lon=row['celldb.wgs84.lon'],
+                    lat=float(row['celldb.wgs84.lat']),
+                    lon=float(row['celldb.wgs84.lon']),
                     timestamp=row['timestamp'],
                     # For now, we just store the entire `row` under `extra`,
                     # even though this leads to some duplicate data.
