@@ -1,4 +1,4 @@
-from telcell.data.models.measurement import Measurement
+from telcell.data.models import Measurement
 
 
 def test_measurement():
