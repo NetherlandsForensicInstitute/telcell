@@ -7,9 +7,9 @@ class BasicModel:
     Other models can use this as a template for more sophisticated methods.
     """
 
-    def predict(self, 
-                track_a: Track, 
-                track_b: Track, 
+    def predict(self,
+                track_a: Track,
+                track_b: Track,
                 background_info=None) -> float:
         """
         Gives LR that two tracks belong to the same instance.
