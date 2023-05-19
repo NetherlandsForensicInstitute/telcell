@@ -27,11 +27,11 @@ def parse_measurements_csv(path: Union[str, Path]) -> List[Track]:
     with open(path, "r") as f:
         reader = csv.DictReader(f)
         # We assume the rows in the csv file are already sorted by:
-        #   1. track (person)
-        #   2. sensor (device)
+        #   1. track (person, car etc. Called owner in the further code)
+        #   2. sensor (of the device. Called name)
         #   3. timestamp
         # If this is not the case, we first have to call `sorted()` here.
-        for (person, device), group in groupby(
+        for (owner, name), group in groupby(
                 reader,
                 key=lambda row: (row["track"], row["sensor"])
         ):
@@ -48,6 +48,6 @@ def parse_measurements_csv(path: Union[str, Path]) -> List[Track]:
                     extra=row
                 ) for row in group
             ]
-            track = Track(person, device, measurements)
+            track = Track(owner, name, measurements)
             tracks.append(track)
     return tracks
