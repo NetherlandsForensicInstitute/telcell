@@ -1,13 +1,13 @@
 from telcell.models.basicmodel import BasicModel
 from telcell.data.parsers import parse_measurements_csv
 
+
 def test_basicmodel(path='./tests/testdata.csv'):
     tracks = parse_measurements_csv(path)
-    trackA = tracks[0]
-    trackB = tracks[1]
+    track_a = tracks[0]
+    track_b = tracks[1]
 
-    dummyModel = BasicModel()
-    prediction = dummyModel.predict(trackA, trackB)
+    dummy_model = BasicModel()
+    prediction = dummy_model.predict(track_a, track_b)
 
     assert prediction == 1.0
-
