@@ -1,7 +1,13 @@
+from pathlib import Path
+
 from telcell.data.parsers import parse_measurements_csv
 
 
-def test_parse_measurements_csv(path='./tests/testdata.csv'):
+def testdata_path():
+    return Path(__file__).parents[1] / 'testdata.csv'
+
+
+def test_parse_measurements_csv(path=testdata_path()):
     tracks = parse_measurements_csv(path)
 
     # 3 different tracks in testdata
