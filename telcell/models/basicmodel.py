@@ -7,6 +7,9 @@ class BasicModel:
     Other models can use this as a template for more sophisticated methods.
     """
 
+    def __str__(self):
+        return "BasicModel"
+
     def predict_lr(self,
                    track_a: Track,
                    track_b: Track,
