@@ -1,15 +1,9 @@
-from pathlib import Path
-
 from telcell.models.basicmodel import BasicModel
 from telcell.data.parsers import parse_measurements_csv
 
 
-def testdata_path():
-    return Path(__file__).parents[1] / 'testdata.csv'
-
-
-def test_basicmodel(path=testdata_path()):
-    tracks = parse_measurements_csv(path)
+def test_basicmodel(testdata_path):
+    tracks = parse_measurements_csv(testdata_path)
     track_a = tracks[0]
     track_b = tracks[1]
 
