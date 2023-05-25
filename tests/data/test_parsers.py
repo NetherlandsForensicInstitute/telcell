@@ -1,8 +1,8 @@
 from telcell.data.parsers import parse_measurements_csv
 
 
-def test_parse_measurements_csv(path='./tests/testdata.csv'):
-    tracks = parse_measurements_csv(path)
+def test_parse_measurements_csv(testdata_path):
+    tracks = parse_measurements_csv(testdata_path)
 
     # 3 different tracks in testdata
     assert len(tracks) == 3
