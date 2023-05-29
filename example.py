@@ -54,7 +54,8 @@ def main():
 
     # Run the pipeline and print results.
     lrs = run_pipeline(data, models, output_dir="scratch")
-    print(lrs)
+    for model, predicted_lrs in zip(models, lrs):
+        print(f"{model.__class__.__name__}: {predicted_lrs}")
 
 
 if __name__ == '__main__':

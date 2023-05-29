@@ -1,16 +1,7 @@
 import datetime
-from typing import Iterable, Iterator, List, Tuple
+from typing import Iterable, List, Tuple
 
 from telcell.data.models import Track
-
-
-def filter_tracks_by_owner(
-        tracks: Iterable[Track],
-        owner: str
-) -> Iterator[Track]:
-    for track in tracks:
-        if track.owner == owner:
-            yield track
 
 
 def split_track_by_interval(
@@ -18,6 +9,17 @@ def split_track_by_interval(
         start: datetime.datetime,
         end: datetime.datetime
 ) -> Tuple[Track, Track]:
+    """
+    Splits the specified `track` in two separate `Track`s: one contains only
+    the `Measurement`s that fall within the specified [start, end) interval,
+    the other that contains all other measurements (i.e. those that occurred
+    before `start` or after `end`).
+
+    :param track: The track to be split in two
+    :param start: The start of the interval to split `track` on
+    :param end: The end of the interval to split `track` on (exclusive)
+    :return: Tracks of measurements within and outside the specified interval
+    """
     selected_measurements = []
     remaining_measurements = []
 
