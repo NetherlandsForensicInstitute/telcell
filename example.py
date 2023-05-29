@@ -53,7 +53,7 @@ def main():
     models = [DummyModel()]
 
     # Run the pipeline and print results.
-    lrs = run_pipeline(data, models)
+    lrs = run_pipeline(data, models, output_dir="scratch")
     print(lrs)
 
 
