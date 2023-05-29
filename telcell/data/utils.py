@@ -49,7 +49,7 @@ def extract_intervals(
     :param timestamps: timestamps which determine which intervals are returned
     :param start: the start of the first interval
     :param duration: the duration of the intervals
-    :return: a sorted list of intervals for which there is at least one timestamp
+    :return: a sorted list of intervals for which there is at least 1 timestamp
     """
     intervals = set()
     for ts in timestamps:
