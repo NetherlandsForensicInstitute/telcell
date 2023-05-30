@@ -1,9 +1,9 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 from telcell.data.models import Track
 
 
-class Model:
+class Model(ABC):
     """
     Abstract base class for models that compute likelihood ratios for pairs of
     tracks (`track_a` and `track_b`) under the hypotheses that the tracks are

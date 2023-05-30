@@ -2,11 +2,11 @@
 
 import random
 import datetime
-from datetime import timedelta
+from datetime import timedelta, timezone
 import pandas as pd
 
 startloc = (52.0907, 5.1214)
-startdate = datetime.datetime(2023, 5, 17, 14, 16, 00)
+startdate = datetime.datetime(2023, 5, 17, 14, 16, 00, tzinfo=timezone.utc)
 
 id = 0
 ids = []
@@ -23,8 +23,7 @@ for i in range(50):
     id += 1
     track.append("TelA")
     sensor.append("A1")
-    timestamp.append((startdate +
-                      timedelta(minutes=i)).strftime("%Y/%m/%d, %H:%M:%S"))
+    timestamp.append((startdate + timedelta(minutes=i)).isoformat(" "))
     lat.append(startloc[0] + (i*0.001))
     lon.append(startloc[1] + (i*0.001))
     degrees.append(0)
@@ -35,8 +34,7 @@ for i in range(50):
     id += 1
     track.append("TelA")
     sensor.append("A2")
-    timestamp.append((startdate +
-                      timedelta(minutes=i)).strftime("%Y/%m/%d, %H:%M:%S"))
+    timestamp.append((startdate + timedelta(minutes=i)).isoformat(" "))
     lat.append(startloc[0] + (i*0.001) + 0.001*random.random())
     lon.append(startloc[1] + (i*0.001) + 0.001*random.random())
     degrees.append(0)
@@ -47,8 +45,7 @@ for i in range(50):
     id += 1
     track.append("TelB")
     sensor.append("B1")
-    timestamp.append((startdate +
-                      timedelta(minutes=i)).strftime("%Y/%m/%d, %H:%M:%S"))
+    timestamp.append((startdate + timedelta(minutes=i)).isoformat(" "))
     lat.append(startloc[0] - (i * 0.001))
     lon.append(startloc[1] - (i * 0.001))
     degrees.append(0)

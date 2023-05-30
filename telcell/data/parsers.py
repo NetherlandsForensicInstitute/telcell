@@ -4,7 +4,7 @@ This module contains parser functions that read raw data and parse them into
 """
 
 import csv
-import datetime
+from datetime import datetime
 from itertools import groupby
 from pathlib import Path
 from typing import List, Union
@@ -48,10 +48,7 @@ def parse_measurements_csv(path: Union[str, Path]) -> List[Track]:
                 Measurement(
                     lat=float(row['celldb.wgs84.lat']),
                     lon=float(row['celldb.wgs84.lon']),
-                    timestamp=datetime.datetime.strptime(
-                        row['timestamp'],
-                        "%Y/%m/%d, %H:%M:%S"
-                    ),
+                    timestamp=datetime.fromisoformat(row['timestamp']),
                     # For now, we just store the entire `row` under `extra`,
                     # even though this leads to some duplicate data.
                     extra=row

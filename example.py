@@ -24,9 +24,10 @@ def dummy_cruncher(tracks: Iterable[Track]) \
     for track_a, track_b in pairwise(tracks):
         # For our `start` we use 5:00 AM on the day before the start of our
         # measurements.
+        earliest = next(iter(track_a)).timestamp
         start = datetime.datetime.combine(
-            next(iter(track_a)).timestamp.date() - datetime.timedelta(days=1),
-            datetime.time(5)
+            earliest.date() - datetime.timedelta(days=1),
+            datetime.time(5, tzinfo=earliest.tzinfo),
         )
 
         # Find all intervals of a day represented in the data.
