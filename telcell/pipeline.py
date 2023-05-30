@@ -31,7 +31,7 @@ def run_pipeline(
     #   2. No intermediate evaluation results for any particular model, you
     #      have to wait until all models have been applied to all data. This
     #      also means any errors that occur during evaluation are delayed.
-    for model in models:
+    for idx, model in enumerate(models):
         lrs = []
         y_true = []
         for track_a, track_b, kwargs in data:
@@ -43,13 +43,16 @@ def run_pipeline(
         lrs_array = np.array(lrs)
         y_true = np.array(y_true, dtype=int)
 
+        # Use the model name in the output filenames.
+        model_name = model.__class__.__name__
+
         # Write metrics to disk.
         cllr = lir.metrics.cllr(lrs_array, y_true)
-        with open(output_dir / "lrs.txt", "w") as f:
+        with open(output_dir / f"{idx}_{model_name}_lrs.txt", "w") as f:
             f.write(str(cllr))  # TODO: formatting
 
         # Save visualizations to disk.
-        pav_file = str(output_dir / "pav.png")
+        pav_file = str(output_dir / f"{idx}_{model_name}_pav.png")
         with lir.plotting.savefig(pav_file) as ax:
             ax.pav(lrs_array, y_true)
 
