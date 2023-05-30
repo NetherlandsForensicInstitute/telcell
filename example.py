@@ -22,10 +22,10 @@ def dummy_cruncher(tracks: Iterable[Track]) \
     """
 
     for track_a, track_b in pairwise(tracks):
-        # For our `start` we use 5:00 AM on the first day of the first
-        # measurement.
+        # For our `start` we use 5:00 AM on the day before the start of our
+        # measurements.
         start = datetime.datetime.combine(
-            next(iter(track_a)).timestamp.date(),
+            next(iter(track_a)).timestamp.date() - datetime.timedelta(days=1),
             datetime.time(5)
         )
 
