@@ -59,4 +59,5 @@ def extract_intervals(
         interval_start = start + sequence_no * duration
         intervals.add((interval_start, interval_start + duration))
 
+    # TODO: yield the intervals one by one instead of taking them in memory?
     return sorted(intervals)
