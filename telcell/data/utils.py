@@ -57,6 +57,7 @@ def extract_intervals(
     for ts in timestamps:
         sequence_no = (ts - start) // duration
         interval_start = start + sequence_no * duration
+        # TODO: do we have to take DST into account here?
         intervals.add((interval_start, interval_start + duration))
 
     # TODO: yield the intervals one by one instead of taking them in memory?
