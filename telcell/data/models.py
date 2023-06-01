@@ -44,6 +44,25 @@ class Track:
         return iter(self.measurements)
 
 
+class MeasurementPair:
+    """
+    A pair of two measurements. The pair can be made with different criteria,
+    for example the time difference between the two measurements. It always
+    contains the information from the two measurements it was created from.
+    """
+    def __init__(self, track_a, track_b):
+        self.track_a = track_a
+        self.track_b = track_b
+
+        self.time_difference = abs(track_a.timestamp - track_b.timestamp)
+        # TODO track/sensor kolomnaam in extra omzetten naar owner/name
+        self.is_colocated = track_a.extra['track'] is not None and \
+            track_a.extra['track'] == track_b.extra['track']
+
+    def __str__(self):
+        return f"<{self.track_a}: ({self.track_b})>"
+
+
 def is_colocated(track_a: Track, track_b: Track) -> bool:
     """Checks if two tracks are colocated to each other."""
     if track_a is track_b:

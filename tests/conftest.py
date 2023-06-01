@@ -9,7 +9,7 @@ from telcell.data.parsers import parse_measurements_csv
 
 @pytest.fixture
 def testdata_path():
-    # create an absolute reference to the "testdata.csv" within the tests folder
+    # create an absolute reference to the "testdata.csv" in the tests folder
     return Path(__file__).parent / 'testdata.csv'
 
 
