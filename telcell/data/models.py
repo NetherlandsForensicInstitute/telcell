@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Mapping, Sequence
+from typing import Any, Iterator, Mapping, Sequence
 
 
 @dataclass
@@ -39,6 +39,9 @@ class Track:
 
     def __len__(self) -> int:
         return len(self.measurements)
+
+    def __iter__(self) -> Iterator[Measurement]:
+        return iter(self.measurements)
 
 
 def is_colocated(track_a: Track, track_b: Track) -> bool:

@@ -1,4 +1,10 @@
+"""
+This module contains parser functions that read raw data and parse them into
+`Measurement` or `Track` objects.
+"""
+
 import csv
+from datetime import datetime
 from itertools import groupby
 from pathlib import Path
 from typing import List, Union
@@ -42,7 +48,7 @@ def parse_measurements_csv(path: Union[str, Path]) -> List[Track]:
                 Measurement(
                     lat=float(row['celldb.wgs84.lat']),
                     lon=float(row['celldb.wgs84.lon']),
-                    timestamp=row['timestamp'],
+                    timestamp=datetime.fromisoformat(row['timestamp']),
                     # For now, we just store the entire `row` under `extra`,
                     # even though this leads to some duplicate data.
                     extra=row
