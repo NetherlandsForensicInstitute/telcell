@@ -1,6 +1,7 @@
 import datetime
 import numpy as np
 from typing import List
+from collections import defaultdict
 
 from telcell.data.models import Measurement, Track, MeasurementPair
 
@@ -74,3 +75,74 @@ def filter_delay(paired_measurements: List[MeasurementPair],
     """
     return [x for x in paired_measurements
             if min_delay <= x.time_difference <= max_delay]
+
+
+def measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
+        paired_measurements: List[MeasurementPair],
+        interval: List[datetime.datetime],
+        history_track: Track,
+        round_lon_lats: bool) -> MeasurementPair:
+    """
+    @param paired_measurements: A list with all paired measurements to
+           consider.
+    @param interval: the interval of time for which one measurement pair must
+           be chosen.
+    @param history_track: the whole history of the right track to find rarity
+           of locations in the interval considered.
+    @param round_lon_lats: Can be toggled to round the lon/lats to two decimals
+    @return: The measurement pair that has the rarest location based on the
+             history.
+
+    TODO There is a problem with testdata, because those are almost continuous
+         lat/lon data,
+    making rarity of locations not as straightforward.
+    Pseudo-solution for now: round lon/lats to two decimals and determine
+    rarity of those.
+    This should not be used if locations are actual cell-ids
+    """
+
+    def is_timestamp_in_interval(track_timestamp, interval):
+        if interval[0] <= track_timestamp <= interval[1]:
+            return True
+
+    def is_pair_in_interval(measurement_pair, interval):
+        if is_timestamp_in_interval(measurement_pair.track_a.timestamp,
+                                    interval):
+            return True
+        if is_timestamp_in_interval(measurement_pair.track_b.timestamp,
+                                    interval):
+            return True
+        else:
+            return False
+
+    measurement_pairs_to_consider = [x for x in paired_measurements
+                                     if is_pair_in_interval(x, interval)]
+    history_to_consider = [x for x in history_track.measurements
+                           if not is_timestamp_in_interval(x.timestamp,
+                                                           interval)]
+
+    dict_location_bins = defaultdict(int)
+    for h in history_to_consider:
+        if round_lon_lats:
+            lon_lat_from_h = str(round(h.lon, 2)) + "_" + str(round(h.lat, 2))
+        else:
+            lon_lat_from_h = str(h.lon) + "_" + str(h.lat)
+
+        dict_location_bins[lon_lat_from_h] += 1
+
+    rarest_m = None
+    rarity_m = len(history_to_consider)
+
+    for m in measurement_pairs_to_consider:
+
+        if round_lon_lats:
+            lon_lat_from_m = str(round(m.track_a.lon, 2)) + "_" + \
+                             str(round(m.track_a.lat, 2))
+        else:
+            lon_lat_from_m = str(m.track_a.lon) + "_" + str(m.track_a.lat)
+
+        if dict_location_bins[lon_lat_from_m] < rarity_m:
+            rarity_m = dict_location_bins[lon_lat_from_m]
+            rarest_m = m
+
+    return rarest_m
