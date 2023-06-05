@@ -1,5 +1,4 @@
 import datetime
-import numpy as np
 from typing import List
 from collections import defaultdict
 
@@ -17,11 +16,7 @@ def get_measurement_with_minimum_time_difference(track: Track,
     @param timestamp: The timestamp used to find the closest measurement.
     @return: The measurement that is the closest to the timestamp
     """
-    track_a_times = [x.timestamp for x in track.measurements]
-    time_difference_with_timestamp = [abs(timestamp - x)
-                                      for x in track_a_times]
-    index = np.argmin(time_difference_with_timestamp)
-    return track.measurements[index]
+    return min(track.measurements, key=lambda m: abs(m.timestamp - timestamp))
 
 
 def make_pair_based_on_time_difference(track: Track,
@@ -47,6 +42,9 @@ def pair_measurements_based_on_time(track_a: Track,
         -> List[MeasurementPair]:
     """
     Pairs two tracks based on the time difference between the measurements.
+    It pairs all measurements from track_b to the closest pair of track_a,
+    meaning that not all measurements from track_a have to be present in the
+    final list!
 
     @param track_a: A history of measurements for a single device.
     @param track_b: A history of measurements for a single device.

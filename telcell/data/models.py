@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Iterator, Mapping, Sequence
+from functools import cached_property
 
 
 @dataclass
@@ -54,13 +55,17 @@ class MeasurementPair:
         self.track_a = track_a
         self.track_b = track_b
 
-        self.time_difference = abs(track_a.timestamp - track_b.timestamp)
-        # TODO track/sensor kolomnaam in extra omzetten naar owner/name
-        self.is_colocated = track_a.extra['track'] is not None and \
-            track_a.extra['track'] == track_b.extra['track']
+    @cached_property
+    def time_difference(self):
+        return abs(self.track_a.timestamp - self.track_b.timestamp)
+
+    @cached_property
+    def is_colocated(self):
+        return self.track_a.extra['track'] is not None and \
+            self.track_a.extra['track'] == self.track_b.extra['track']
 
     def __str__(self):
-        return f"<{self.track_a}: ({self.track_b})>"
+        return f"<{self.track_a}, ({self.track_b})>"
 
 
 def is_colocated(track_a: Track, track_b: Track) -> bool:
