@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Iterator, Mapping, Sequence
+from typing import Any, Iterator, Mapping, Sequence, Tuple
 from functools import cached_property
 
 
@@ -51,21 +51,21 @@ class MeasurementPair:
     for example the time difference between the two measurements. It always
     contains the information from the two measurements it was created from.
     """
-    def __init__(self, track_a, track_b):
-        self.track_a = track_a
-        self.track_b = track_b
+    def __init__(self, measurement_a, measurement_b):
+        self.measurement_a = measurement_a
+        self.measurement_b = measurement_b
 
     @cached_property
     def time_difference(self):
-        return abs(self.track_a.timestamp - self.track_b.timestamp)
+        return abs(self.measurement_a.timestamp - self.measurement_b.timestamp)
 
     @cached_property
     def is_colocated(self):
-        return self.track_a.extra['track'] is not None and \
-            self.track_a.extra['track'] == self.track_b.extra['track']
+        return self.measurement_a.extra['track'] is not None and \
+            self.measurement_a.extra['track'] == self.measurement_b.extra['track']
 
     def __str__(self):
-        return f"<{self.track_a}, ({self.track_b})>"
+        return f"<{self.measurement_a}, ({self.measurement_b})>"
 
 
 def is_colocated(track_a: Track, track_b: Track) -> bool:

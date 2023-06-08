@@ -1,5 +1,5 @@
 import datetime
-from typing import List
+from typing import List, Tuple
 from collections import defaultdict
 
 from telcell.data.models import Measurement, Track, MeasurementPair
@@ -100,18 +100,11 @@ def measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
     """
 
     def is_timestamp_in_interval(track_timestamp, interval):
-        if interval[0] <= track_timestamp <= interval[1]:
-            return True
+        return interval[0] <= track_timestamp <= interval[1]
 
     def is_pair_in_interval(measurement_pair, interval):
-        if is_timestamp_in_interval(measurement_pair.track_a.timestamp,
-                                    interval):
-            return True
-        if is_timestamp_in_interval(measurement_pair.track_b.timestamp,
-                                    interval):
-            return True
-        else:
-            return False
+        return any((is_timestamp_in_interval(measurement_pair.measurement_a.timestamp, interval),
+                    is_timestamp_in_interval(measurement_pair.measurement_b.timestamp, interval)))
 
     measurement_pairs_to_consider = [x for x in paired_measurements
                                      if is_pair_in_interval(x, interval)]
@@ -134,10 +127,10 @@ def measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
     for m in measurement_pairs_to_consider:
 
         if round_lon_lats:
-            lon_lat_from_m = str(round(m.track_a.lon, 2)) + "_" + \
-                             str(round(m.track_a.lat, 2))
+            lon_lat_from_m = str(round(m.measurement_a.lon, 2)) + "_" + \
+                             str(round(m.measurement_a.lat, 2))
         else:
-            lon_lat_from_m = str(m.track_a.lon) + "_" + str(m.track_a.lat)
+            lon_lat_from_m = str(m.measurement_a.lon) + "_" + str(m.measurement_a.lat)
 
         if dict_location_bins[lon_lat_from_m] < rarity_m:
             rarity_m = dict_location_bins[lon_lat_from_m]
