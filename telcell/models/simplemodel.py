@@ -77,7 +77,7 @@ def filter_delay(paired_measurements: List[MeasurementPair],
 
 def measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
         paired_measurements: List[MeasurementPair],
-        interval: List[datetime.datetime],
+        interval: Tuple[datetime.datetime, datetime.datetime],
         history_track: Track,
         round_lon_lats: bool) -> MeasurementPair:
     """
@@ -99,18 +99,17 @@ def measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
     This should not be used if locations are actual cell-ids
     """
 
-    def is_timestamp_in_interval(track_timestamp, interval):
-        return interval[0] <= track_timestamp <= interval[1]
+    def in_interval(timestamp, interval):
+        return interval[0] <= timestamp <= interval[1]
 
-    def is_pair_in_interval(measurement_pair, interval):
-        return any((is_timestamp_in_interval(measurement_pair.measurement_a.timestamp, interval),
-                    is_timestamp_in_interval(measurement_pair.measurement_b.timestamp, interval)))
+    def is_pair_in_interval(pair, interval):
+        return any((in_interval(pair.measurement_a.timestamp, interval),
+                    in_interval(pair.measurement_b.timestamp, interval)))
 
     measurement_pairs_to_consider = [x for x in paired_measurements
                                      if is_pair_in_interval(x, interval)]
     history_to_consider = [x for x in history_track.measurements
-                           if not is_timestamp_in_interval(x.timestamp,
-                                                           interval)]
+                           if not in_interval(x.timestamp, interval)]
 
     dict_location_bins = defaultdict(int)
     for h in history_to_consider:
