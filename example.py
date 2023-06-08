@@ -3,6 +3,8 @@ from itertools import pairwise
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Mapping, Tuple
 
+from lrbenchmark.evaluation import Setup
+
 from telcell.data.models import Track
 from telcell.data.parsers import parse_measurements_csv
 from telcell.data.utils import extract_intervals, split_track_by_interval
@@ -53,10 +55,16 @@ def main():
     # Specify the models that we want to evaluate.
     models = [DummyModel()]
 
-    # Run the pipeline and print results.
-    lrs = run_pipeline(data, models, output_dir="scratch")
-    for model, predicted_lrs in zip(models, lrs):
-        print(f"{model.__class__.__name__}: {predicted_lrs}")
+    # Create an experiment setup using run_pipeline as the evaluation function
+    setup = Setup(run_pipeline)
+    # Specify the constant parameters for evaluation
+    setup.parameter('data', data)
+    setup.parameter('output_dir', 'scratch')
+
+    # Specify the variable parameters for evaluation
+    for _, parameters, predicted_lrs in setup.run_full_grid({'model': models}):
+        model_name = parameters['model'].__class__.__name__
+        print(f"{model_name}: {predicted_lrs}")
 
 
 if __name__ == '__main__':
