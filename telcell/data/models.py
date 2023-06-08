@@ -45,15 +45,16 @@ class Track:
         return iter(self.measurements)
 
 
+@dataclass(order=False)
 class MeasurementPair:
     """
     A pair of two measurements. The pair can be made with different criteria,
     for example the time difference between the two measurements. It always
     contains the information from the two measurements it was created from.
     """
-    def __init__(self, measurement_a, measurement_b):
-        self.measurement_a = measurement_a
-        self.measurement_b = measurement_b
+
+    measurement_a: Measurement
+    measurement_b: Measurement
 
     @cached_property
     def time_difference(self):

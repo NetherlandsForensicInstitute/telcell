@@ -1,6 +1,6 @@
 import datetime
 from typing import List, Tuple
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 from telcell.data.models import Measurement, Track, MeasurementPair
 
@@ -102,37 +102,26 @@ def measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
     def in_interval(timestamp, interval):
         return interval[0] <= timestamp <= interval[1]
 
-    def is_pair_in_interval(pair, interval):
+    def pair_in_interval(pair, interval):
         return any((in_interval(pair.measurement_a.timestamp, interval),
                     in_interval(pair.measurement_b.timestamp, interval)))
 
-    measurement_pairs_to_consider = [x for x in paired_measurements
-                                     if is_pair_in_interval(x, interval)]
-    history_to_consider = [x for x in history_track.measurements
-                           if not in_interval(x.timestamp, interval)]
-
-    dict_location_bins = defaultdict(int)
-    for h in history_to_consider:
+    def location_key(measurement):
         if round_lon_lats:
-            lon_lat_from_h = str(round(h.lon, 2)) + "_" + str(round(h.lat, 2))
+            return f'{measurement.lon:.2f}_{measurement.lat:.2f}'
         else:
-            lon_lat_from_h = str(h.lon) + "_" + str(h.lat)
+            return f'{measurement.lon}_{measurement.lat}'
 
-        dict_location_bins[lon_lat_from_h] += 1
+    def sort_key(element):
+        rarity, pair = element
+        return rarity, pair.time_difference
 
-    rarest_m = None
-    rarity_m = len(history_to_consider)
+    pairs_in_interval = [x for x in paired_measurements
+                         if pair_in_interval(x, interval)]
+    history_outside_interval = [x for x in history_track.measurements
+                                if not in_interval(x.timestamp, interval)]
 
-    for m in measurement_pairs_to_consider:
-
-        if round_lon_lats:
-            lon_lat_from_m = str(round(m.measurement_a.lon, 2)) + "_" + \
-                             str(round(m.measurement_a.lat, 2))
-        else:
-            lon_lat_from_m = str(m.measurement_a.lon) + "_" + str(m.measurement_a.lat)
-
-        if dict_location_bins[lon_lat_from_m] < rarity_m:
-            rarity_m = dict_location_bins[lon_lat_from_m]
-            rarest_m = m
-
-    return rarest_m
+    location_counts = Counter(location_key(m) for m in history_outside_interval)
+    min_rarity, rarest_pair = min(((location_counts.get(location_key(pair.measurement_b), 0), pair)
+                                  for pair in pairs_in_interval), key=sort_key)
+    return rarest_pair
