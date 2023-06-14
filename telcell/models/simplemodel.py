@@ -4,7 +4,9 @@ from itertools import combinations
 from typing import List, Tuple
 
 import lir
+import numpy as np
 import pyproj
+from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
 from telcell.data.models import Measurement, Track, MeasurementPair
@@ -135,22 +137,25 @@ def measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
 
 
 def calculate_distance_for_pair(pair: MeasurementPair) -> float:
-    lon_lat_a = pair.measurement_a.lon, pair.measurement_a.lat
-    lon_lat_b = pair.measurement_b.lon, pair.measurement_b.lat
-    return calculate_distance_lat_lon(lon_lat_a, lon_lat_b)
+    latlon_a = pair.measurement_a.latlon
+    latlon_b = pair.measurement_b.latlon
+    return calculate_distance_lat_lon(latlon_a, latlon_b)
 
 
-def calculate_distance_lat_lon(lon_lat_a: Tuple[float, float],
-                               lon_lat_b: Tuple[float, float]) -> float:
+def calculate_distance_lat_lon(latlon_a: Tuple[float, float],
+                               latlon_b: Tuple[float, float]) -> float:
     geod = pyproj.Geod(ellps='WGS84')
-    _, _, distance = geod.inv(lon_lat_a[0], lon_lat_a[1], lon_lat_b[0],
-                              lon_lat_b[1])
+    lat_a, lon_a = latlon_a
+    lat_b, lon_b = latlon_b
+    _, _, distance = geod.inv(lon_a, lat_a, lon_b, lat_b)
     return distance
 
 
-def select_colocated_pairs(tracks: List[Track], min_delay: datetime.timedelta,
-                           max_delay: datetime.timedelta) -> List[
-    MeasurementPair]:
+def select_colocated_pairs(tracks: List[Track],
+                           min_delay: datetime.timedelta = datetime.timedelta(
+                               seconds=0),
+                           max_delay: datetime.timedelta = datetime.timedelta(
+                               seconds=120)) -> List[MeasurementPair]:
     final_pairs = []
     for track_a, track_b in combinations(tracks, 2):
         if track_a.owner == track_b.owner and track_a.name != track_b.name:
@@ -160,11 +165,35 @@ def select_colocated_pairs(tracks: List[Track], min_delay: datetime.timedelta,
     return final_pairs
 
 
-class CellDistance(Model):
-    def __init__(self, manager_data: List[Track]):
-        self.training_data = manager_data
+def generate_dislocated_pairs(measurement: Measurement, track: Track) -> List[
+    MeasurementPair]:
+    pairs = []
+    for measurement_a in track:
+        pairs.append(MeasurementPair(measurement, measurement_a))
+    return pairs
 
-    def predict_lr(self, track_a: Track, track_b: Track, interval, background,
+
+class CalibratedEstimator:
+    def __init__(self, estimator, calibrator):
+        self.estimator = estimator
+        self.calibrator = calibrator
+
+    def fit(self, X, y):
+        self.estimator.fit(X, y)
+        self.calibrator.fit(self.estimator.predict_proba(X)[:, 1], y)
+        return self
+
+    def predict_proba(self, X):
+        p1 = self.estimator.predict_proba(X)[:, 1]
+        p1 = lir.util.to_probability(self.calibrator.transform(p1))
+        return np.stack([1 - p1, p1], axis=1)
+
+
+class CellDistance(Model):
+    def __init__(self, colocated_training_data: List[Track]):
+        self.training_data = colocated_training_data
+
+    def predict_lr(self, track_a: Track, track_b: Track, interval: Tuple[datetime, datetime], background: Track,
                    **kwargs) -> float:
         pairs = pair_measurements_based_on_time(track_a, track_b)
         pair = measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
@@ -172,26 +201,31 @@ class CellDistance(Model):
             pairs,
             interval=interval,
             history_track=background,
-            round_lon_lats=False,
+            round_lon_lats=True,
         )
-        # TODO: implement select_colocated_pairs
+
         colocated_training_pairs = select_colocated_pairs(self.training_data)
         # resulting pairs need not be really dislocated, but simulated dislocation by temporally
         # shifting track a's history towards the timestamp of the singular measurement of track b
-        # TODO: implement generate_dislocated_pairs
         dislocated_training_pairs = generate_dislocated_pairs(
             pair.measurement_b, background)
         training_pairs = colocated_training_pairs + dislocated_training_pairs
         training_labels = [1] * len(colocated_training_pairs) + [0] * len(
             dislocated_training_pairs)
 
+        training_features = np.array(list(map(calculate_distance_for_pair,
+                                              training_pairs))).reshape(-1, 1)
         scaler = StandardScaler()
-
-        # TODO: implement calculate_distance (likely with pyproj, should be available somewhere already)
-        training_features = map(calculate_distance_for_pair, training_pairs)
-        training_features = scaler.fit_transform(training_features)
-        self.estimator.fit(training_features, training_labels)
-
-        comparison_features = [calculate_distance_for_pair(pair)]
+        scaler.fit(training_features)
+        training_features = scaler.transform(training_features)
+        comparison_features = np.array(
+            [calculate_distance_for_pair(pair)]).reshape(-1, 1)
         comparison_features = scaler.transform(comparison_features)
-        return lir.to_odds(self.estimator.predict_proba(comparison_features))
+
+        estimator = LogisticRegression()
+        calibrator = lir.ELUBbounder(lir.KDECalibrator(bandwidth=1.0))
+        calibrated_estimator = CalibratedEstimator(estimator, calibrator)
+        calibrated_estimator.fit(training_features, np.array(training_labels))
+
+        return float(lir.to_odds(calibrated_estimator.predict_proba(
+            comparison_features)[:, 1]))

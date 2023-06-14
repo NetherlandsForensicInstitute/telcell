@@ -7,6 +7,7 @@ from telcell.data.models import Track
 from telcell.data.parsers import parse_measurements_csv
 from telcell.data.utils import extract_intervals, split_track_by_interval
 from telcell.models import DummyModel
+from telcell.models.simplemodel import CellDistance
 from telcell.pipeline import run_pipeline
 
 
@@ -39,7 +40,8 @@ def dummy_cruncher(tracks: Iterable[Track]) \
 
         for start, end in intervals:
             single_day, other = split_track_by_interval(track_a, start, end)
-            yield single_day, track_b, {"background": other}
+            yield single_day, track_b, {"background": other,
+                                        "interval": (start, end)}
 
 
 def main():
@@ -51,7 +53,9 @@ def main():
     data = list(dummy_cruncher(tracks))
 
     # Specify the models that we want to evaluate.
-    models = [DummyModel()]
+    models = [DummyModel(), CellDistance(
+        colocated_training_data=parse_measurements_csv(
+            '/mnt/p/samenreizen/gebruikerstoestellen/measurements.csv'))]
 
     # Run the pipeline and print results.
     lrs = run_pipeline(data, models, output_dir="scratch")

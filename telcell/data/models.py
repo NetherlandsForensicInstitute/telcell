@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Iterator, Mapping, Sequence
 from functools import cached_property
+from typing import Any, Iterator, Mapping, Sequence, Tuple
 
 
 @dataclass
@@ -20,6 +20,10 @@ class Measurement:
     lon: float
     timestamp: datetime
     extra: Mapping[str, Any]
+
+    @property
+    def latlon(self) -> Tuple[float, float]:
+        return (self.lat, self.lon)
 
     def __str__(self):
         return f"<{self.timestamp}: ({self.lat}, {self.lon})>"
@@ -63,7 +67,8 @@ class MeasurementPair:
     @cached_property
     def is_colocated(self):
         return self.measurement_a.extra['track'] is not None and \
-            self.measurement_a.extra['track'] == self.measurement_b.extra['track']
+               self.measurement_a.extra['track'] == self.measurement_b.extra[
+                   'track']
 
     def __str__(self):
         return f"<{self.measurement_a}, ({self.measurement_b})>"
