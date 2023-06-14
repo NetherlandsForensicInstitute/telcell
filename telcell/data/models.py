@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Iterator, Mapping, Sequence, Tuple
+from typing import Any, Iterator, Mapping, Sequence
 from functools import cached_property
 
 

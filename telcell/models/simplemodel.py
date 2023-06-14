@@ -1,8 +1,12 @@
 import datetime
 from typing import List, Tuple
-from collections import Counter, defaultdict
+from collections import Counter
+
+import lir
+from sklearn.preprocessing import StandardScaler
 
 from telcell.data.models import Measurement, Track, MeasurementPair
+from telcell.models import Model
 
 
 def get_measurement_with_minimum_time_difference(track: Track,
@@ -125,3 +129,36 @@ def measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
     min_rarity, rarest_pair = min(((location_counts.get(location_key(pair.measurement_b), 0), pair)
                                   for pair in pairs_in_interval), key=sort_key)
     return rarest_pair
+
+
+class CellDistance(Model):
+    def __init__(self, manager_data):
+        self.training_data = manager_data
+
+    def predict_lr(self, track_a: Track, track_b: Track, interval, background, **kwargs) -> float:
+        pairs = pair_measurements_based_on_time(track_a, track_b)
+        pair = measurement_pairs_with_rarest_location_per_interval_based_on_track_history(  # TODO: fix name :D
+            pairs,
+            interval=interval,
+            history_track=background,
+            round_lon_lats=False,
+        )
+        # TODO: implement select_colocated_pairs
+        colocated_training_pairs = select_colocated_pairs(self.training_data)
+        # resulting pairs need not be really dislocated, but simulated dislocation by temporally
+        # shifting track a's history towards the timestamp of the singular measurement of track b
+        # TODO: implement generate_dislocated_pairs
+        dislocated_training_pairs = generate_dislocated_pairs(pair.measurement_b, background)
+        training_pairs = colocated_training_pairs + dislocated_training_pairs
+        training_labels = [1] * len(colocated_training_pairs) + [0] * len(dislocated_training_pairs)
+
+        scaler = StandardScaler()
+
+        # TODO: implement calculate_distance (likely with pyproj, should be available somewhere already)
+        training_features = map(calculate_distance, training_pairs)
+        training_features = scaler.fit_transform(training_features)
+        self.estimator.fit(training_features, training_labels)
+
+        comparison_features = [calculate_distance(pair)]
+        comparison_features = scaler.transform(comparison_features)
+        return lir.to_odds(self.estimator.predict_proba(comparison_features))
