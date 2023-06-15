@@ -4,7 +4,7 @@ from datetime import timedelta, datetime, timezone
 from telcell.data.parsers import parse_measurements_csv
 from telcell.models.simplemodel import pair_measurements_based_on_time,\
     filter_delay,\
-    measurement_pairs_with_rarest_location_per_interval_based_on_track_history
+    make_pair_based_on_rarest_location_within_interval
 
 
 def test_simplemodel(testdata_3days_path):
@@ -34,10 +34,10 @@ def test_simplemodel(testdata_3days_path):
     start_of_interval = datetime(2023, 5, 18, 00, 00, 00, tzinfo=timezone.utc)
     end_of_interval = datetime(2023, 5, 19, 00, 00, 00, tzinfo=timezone.utc)
 
-    rarest_measurement_pair = measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
-        filtered_measurement_pairs,
-        [start_of_interval,
-         end_of_interval],
-        track_b,
-        round_lon_lats=True)
+    rarest_measurement_pair = \
+        make_pair_based_on_rarest_location_within_interval(
+            filtered_measurement_pairs,
+            (start_of_interval, end_of_interval),
+            track_b,
+            round_lon_lats=True)
     assert rarest_measurement_pair

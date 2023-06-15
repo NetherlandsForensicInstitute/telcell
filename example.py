@@ -54,7 +54,8 @@ def main():
 
     # Specify the models that we want to evaluate.
     models = [DummyModel(), CellDistance(
-        colocated_training_data=parse_measurements_csv('measurements.csv'))]  # vul hier het correcte pad in
+        colocated_training_data=parse_measurements_csv('measurements.csv'))]
+    # vul hier het correcte pad in (TODO: csv maken dat in commit kan)
 
     # Run the pipeline and print results.
     lrs = run_pipeline(data, models, output_dir="scratch")

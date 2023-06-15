@@ -83,12 +83,15 @@ def filter_delay(paired_measurements: List[MeasurementPair],
             if min_delay <= x.time_difference <= max_delay]
 
 
-def measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
+def make_pair_based_on_rarest_location_within_interval(
         paired_measurements: List[MeasurementPair],
         interval: Tuple[datetime.datetime, datetime.datetime],
         history_track: Track,
         round_lon_lats: bool) -> MeasurementPair:
     """
+    Creates a pair based on the rarest location of the track history. Also,
+    the pair must fall within a certain time interval.
+
     @param paired_measurements: A list with all paired measurements to
            consider.
     @param interval: the interval of time for which one measurement pair must
@@ -129,7 +132,8 @@ def measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
     history_outside_interval = [x for x in history_track.measurements
                                 if not in_interval(x.timestamp, interval)]
 
-    location_counts = Counter(location_key(m) for m in history_outside_interval)
+    location_counts = Counter(
+        location_key(m) for m in history_outside_interval)
     min_rarity, rarest_pair = min(
         ((location_counts.get(location_key(pair.measurement_b), 0), pair)
          for pair in pairs_in_interval), key=sort_key)
@@ -185,13 +189,15 @@ def select_colocated_pairs(tracks: List[Track],
     return final_pairs
 
 
-def generate_dislocated_pairs(measurement: Measurement, track: Track) -> List[
-    MeasurementPair]:
+def generate_dislocated_pairs(measurement: Measurement, track: Track) \
+        -> List[MeasurementPair]:
     """
     Created paired measurements that are dislocated. We do so by linking one
     specific measurement to every measurement of a given track.
-    @param measurement: the measurement that will be linked to other measurements
-    @track: the measurements of this track will be linked to the given measurement
+    @param measurement: the measurement that will be linked to other
+     measurements
+    @track: the measurements of this track will be linked to the given
+     measurement
     @return: A list with dislocated paired measurements.
     """
     pairs = []
@@ -234,8 +240,7 @@ class CellDistance(Model):
                    background: Track,
                    **kwargs) -> float:
         pairs = pair_measurements_based_on_time(track_a, track_b)
-        pair = measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
-            # TODO: fix name :D
+        pair = make_pair_based_on_rarest_location_within_interval(
             paired_measurements=pairs,
             interval=interval,
             history_track=background,
@@ -243,8 +248,9 @@ class CellDistance(Model):
         )
 
         colocated_training_pairs = select_colocated_pairs(self.training_data)
-        # resulting pairs need not be really dislocated, but simulated dislocation by temporally
-        # shifting track a's history towards the timestamp of the singular measurement of track b
+        # resulting pairs need not be really dislocated, but simulated
+        # dislocation by temporally shifting track a's history towards the
+        # timestamp of the singular measurement of track b
         dislocated_training_pairs = generate_dislocated_pairs(
             pair.measurement_b, background)
         training_pairs = colocated_training_pairs + dislocated_training_pairs
