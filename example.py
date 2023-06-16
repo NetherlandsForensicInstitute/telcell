@@ -10,6 +10,7 @@ from telcell.data.parsers import parse_measurements_csv
 from telcell.data.utils import extract_intervals, split_track_by_interval
 from telcell.models import DummyModel
 from telcell.pipeline import run_pipeline
+from telcell.utils.savefile import make_output_plots
 
 
 def dummy_cruncher(tracks: Iterable[Track]) \
@@ -59,12 +60,22 @@ def main():
     setup = Setup(run_pipeline)
     # Specify the constant parameters for evaluation
     setup.parameter('data', data)
-    setup.parameter('output_dir', 'scratch')
+    # Specify the main output_dir
+    main_output_dir = Path('scratch')
 
     # Specify the variable parameters for evaluation
-    for _, parameters, predicted_lrs in setup.run_full_grid({'model': models}):
+    for variabele, parameters, (predicted_lrs, y_true) in \
+            setup.run_full_grid({'model': models}):
         model_name = parameters['model'].__class__.__name__
         print(f"{model_name}: {predicted_lrs}")
+        print(parameters)
+
+        output_dir = main_output_dir / ''.join(list(variabele.keys()))
+
+        make_output_plots(predicted_lrs,
+                          y_true,
+                          model_name,
+                          output_dir)
 
 
 if __name__ == '__main__':
