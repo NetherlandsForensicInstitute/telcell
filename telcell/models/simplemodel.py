@@ -200,14 +200,15 @@ def generate_dislocated_pairs(measurement: Measurement, track: Track) \
      measurement
     @return: A list with dislocated paired measurements.
     """
-    if measurement.extra['sensor'] is not None and measurement.extra['sensor'] != track.name:
+    if measurement.extra['sensor'] is not None and \
+            measurement.extra['sensor'] != track.name:
         pairs = []
         for measurement_a in track:
             pairs.append(MeasurementPair(measurement, measurement_a))
         return pairs
     else:
         raise Exception("Track and measurement owner are equal, therefore"
-                         "cannot generate dislocated pairs.")
+                        " cannot generate dislocated pairs.")
 
 
 class CalibratedEstimator:
