@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Iterator, Mapping, Sequence, Tuple
+from typing import Any, Iterator, Mapping, Sequence
 from functools import cached_property
 
 
@@ -62,11 +62,14 @@ class MeasurementPair:
 
     @cached_property
     def is_colocated(self):
+        """Track means something else here. Since all info from the row in
+        the csv is put in 'extra', this is the raw information that is
+        present in the csv file. In that file the column 'track' has to
+        exist. In the code this is renamed to 'owner'. So it is not a
+        reference to the whole track, but only to the owner of the track."""
         return self.measurement_a.extra['track'] is not None and \
-            self.measurement_a.extra['track'] == self.measurement_b.extra['track']
-
-    def __str__(self):
-        return f"<{self.measurement_a}, ({self.measurement_b})>"
+            self.measurement_a.extra['track'] == \
+            self.measurement_b.extra['track']
 
 
 def is_colocated(track_a: Track, track_b: Track) -> bool:

@@ -1,6 +1,6 @@
 import datetime
 from typing import List, Tuple
-from collections import Counter, defaultdict
+from collections import Counter
 
 from telcell.data.models import Measurement, Track, MeasurementPair
 
@@ -121,7 +121,9 @@ def measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
     history_outside_interval = [x for x in history_track.measurements
                                 if not in_interval(x.timestamp, interval)]
 
-    location_counts = Counter(location_key(m) for m in history_outside_interval)
-    min_rarity, rarest_pair = min(((location_counts.get(location_key(pair.measurement_b), 0), pair)
-                                  for pair in pairs_in_interval), key=sort_key)
+    location_counts = Counter(location_key(m) for m in
+                              history_outside_interval)
+    min_rarity, rarest_pair = min(((location_counts.get(
+        location_key(pair.measurement_b), 0), pair)
+        for pair in pairs_in_interval), key=sort_key)
     return rarest_pair
