@@ -68,10 +68,8 @@ def main():
             setup.run_full_grid({'model': models}):
         model_name = parameters['model'].__class__.__name__
         print(f"{model_name}: {predicted_lrs}")
-        print(parameters)
 
         output_dir = main_output_dir / ''.join(list(variabele.keys()))
-
         make_output_plots(predicted_lrs,
                           y_true,
                           model_name,
