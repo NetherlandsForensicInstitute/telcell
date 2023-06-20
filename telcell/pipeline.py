@@ -7,6 +7,7 @@ from telcell.models import Model
 def run_pipeline(
         data: Iterable[Tuple[Track, Track, Mapping[str, Any]]],
         model: Model,
+        **kwargs
 ) -> tuple[list[float], list[bool]]:
 
     lrs = []
