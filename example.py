@@ -64,15 +64,21 @@ def main():
     main_output_dir = Path('scratch')
 
     # Specify the variable parameters for evaluation
-    for variabele, parameters, (predicted_lrs, y_true) in \
+    # TODO Duidelijk
+    #  documenteren hoe je de grid moet definieren. Dit is een dict van
+    #  iterables. Bijvoorbeeld [models],  een lijst van modellen die
+    #  gedraaid moet worden. Of een lijst van verschillende parameters. Of
+    #  gewoon 'test' om de hele riedel 4x te draaien.
+    for variable, parameters, (predicted_lrs, y_true) in \
             setup.run_full_grid({'model': models}):
         model_name = parameters['model'].__class__.__name__
         print(f"{model_name}: {predicted_lrs}")
 
-        output_dir = main_output_dir / ''.join(list(variabele.keys()))
+        unique_dir = '_'.join(f'{key}-{value}'
+                              for key, value in variable.items())
+        output_dir = main_output_dir / unique_dir
         make_output_plots(predicted_lrs,
                           y_true,
-                          model_name,
                           output_dir)
 
 
