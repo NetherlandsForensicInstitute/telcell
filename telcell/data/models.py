@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Iterator, Mapping, Sequence
+from functools import cached_property
 
 
 @dataclass
@@ -42,6 +43,33 @@ class Track:
 
     def __iter__(self) -> Iterator[Measurement]:
         return iter(self.measurements)
+
+
+@dataclass(order=False)
+class MeasurementPair:
+    """
+    A pair of two measurements. The pair can be made with different criteria,
+    for example the time difference between the two measurements. It always
+    contains the information from the two measurements it was created from.
+    """
+
+    measurement_a: Measurement
+    measurement_b: Measurement
+
+    @cached_property
+    def time_difference(self):
+        return abs(self.measurement_a.timestamp - self.measurement_b.timestamp)
+
+    @cached_property
+    def is_colocated(self):
+        """Track means something else here. Since all info from the row in
+        the csv is put in 'extra', this is the raw information that is
+        present in the csv file. In that file the column 'track' has to
+        exist. In the code this is renamed to 'owner'. So it is not a
+        reference to the whole track, but only to the owner of the track."""
+        return self.measurement_a.extra['track'] is not None and \
+            self.measurement_a.extra['track'] == \
+            self.measurement_b.extra['track']
 
 
 def is_colocated(track_a: Track, track_b: Track) -> bool:
