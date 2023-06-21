@@ -3,6 +3,10 @@ from datetime import datetime
 from typing import Any, Iterator, Mapping, Sequence, Tuple
 from functools import cached_property
 
+import pyproj
+
+GEOD = pyproj.Geod(ellps='WGS84')
+
 
 @dataclass
 class Measurement:
@@ -62,6 +66,7 @@ class MeasurementPair:
 
     @cached_property
     def time_difference(self):
+        """Calculate the absolute time difference between the measurements."""
         return abs(self.measurement_a.timestamp - self.measurement_b.timestamp)
 
     @cached_property
@@ -75,8 +80,16 @@ class MeasurementPair:
             self.measurement_a.extra['track'] == \
             self.measurement_b.extra['track']
 
+    @cached_property
+    def distance(self):
+        """Calculate the distance between two measurements of the pair."""
+        latlon_a = self.measurement_a.latlon
+        latlon_b = self.measurement_b.latlon
+        return calculate_distance_lat_lon(latlon_a, latlon_b)
+
     def __str__(self):
         return f"<{self.measurement_a}, ({self.measurement_b})>"
+
 
 def is_colocated(track_a: Track, track_b: Track) -> bool:
     """Checks if two tracks are colocated to each other."""
@@ -84,3 +97,18 @@ def is_colocated(track_a: Track, track_b: Track) -> bool:
         return True
 
     return track_a.owner is not None and track_a.owner == track_b.owner
+
+
+def calculate_distance_lat_lon(latlon_a: Tuple[float, float],
+                               latlon_b: Tuple[float, float]) -> float:
+    """
+    Calculate the distance between a set of lat-lon coordinates.
+
+    :param latlon_a: the latitude and longitude of the first object
+    :param latlon_b: the latitude and longitude of the second object
+    :return: the calculated distance
+    """
+    lat_a, lon_a = latlon_a
+    lat_b, lon_b = latlon_b
+    _, _, distance = GEOD.inv(lon_a, lat_a, lon_b, lat_b)
+    return distance

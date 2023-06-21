@@ -1,16 +1,14 @@
 from datetime import timedelta, datetime, timezone
 
-
 from telcell.data.parsers import parse_measurements_csv
-from telcell.models.simplemodel import pair_measurements_based_on_time,\
-    filter_delay,\
+from telcell.models.simplemodel import get_switches, filter_delay,\
     make_pair_based_on_rarest_location_within_interval
 
 
 def test_simplemodel(testdata_3days_path):
     track_a, track_b, track_c = parse_measurements_csv(testdata_3days_path)
 
-    paired_measurements = pair_measurements_based_on_time(track_a, track_b)
+    paired_measurements = get_switches(track_a, track_b)
 
     min_delay_td = timedelta(seconds=0)
     max_delay_td = timedelta(seconds=120)

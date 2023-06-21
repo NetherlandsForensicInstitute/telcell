@@ -11,7 +11,10 @@ from sklearn.preprocessing import StandardScaler
 from telcell.data.models import Measurement, Track, MeasurementPair
 from telcell.models import Model
 
+geod = pyproj.Geod(ellps='WGS84')
 
+
+# TODO: change the java-styled docstring to more python style (:param)
 def get_measurement_with_minimum_time_difference(track: Track,
                                                  timestamp: datetime) \
         -> Measurement:
@@ -44,14 +47,12 @@ def make_pair_based_on_time_difference(track: Track,
     return MeasurementPair(closest_measurement, measurement)
 
 
-def pair_measurements_based_on_time(track_a: Track,
-                                    track_b: Track) \
-        -> List[MeasurementPair]:
+def get_switches(track_a: Track, track_b: Track) -> List[MeasurementPair]:
     """
-    Pairs two tracks based on the time difference between the measurements.
-    It pairs all measurements from track_b to the closest pair of track_a,
-    meaning that not all measurements from track_a have to be present in the
-    final list!
+    Retrieves switches between two tracks, by pairing those based on the time
+    difference between the measurements. It pairs all measurements from track_b
+    to the closest pair of track_a, meaning that not all measurements from
+    track_a have to be present in the final list!
 
     @param track_a: A history of measurements for a single device.
     @param track_b: A history of measurements for a single device.
@@ -59,15 +60,13 @@ def pair_measurements_based_on_time(track_a: Track,
     """
     paired_measurements = []
     for measurement in track_b.measurements:
-        new_pair = make_pair_based_on_time_difference(track_a,
-                                                      measurement)
+        new_pair = make_pair_based_on_time_difference(track_a, measurement)
         paired_measurements.append(new_pair)
     return paired_measurements
 
 
 def filter_delay(paired_measurements: List[MeasurementPair],
-                 min_delay: timedelta,
-                 max_delay: timedelta) \
+                 min_delay: timedelta, max_delay: timedelta) \
         -> List[MeasurementPair]:
     """
     Filter the paired measurements based on a specified delay range. Can
@@ -139,37 +138,10 @@ def make_pair_based_on_rarest_location_within_interval(
     return rarest_pair
 
 
-def calculate_distance_for_pair(pair: MeasurementPair) -> float:
-    """
-    Calculate the distance between two measurements of a given pair.
-    @param pair: the pair to calculate the distance for.
-    @return: the calculated distance
-    """
-    latlon_a = pair.measurement_a.latlon
-    latlon_b = pair.measurement_b.latlon
-    return calculate_distance_lat_lon(latlon_a, latlon_b)
-
-
-def calculate_distance_lat_lon(latlon_a: Tuple[float, float],
-                               latlon_b: Tuple[float, float]) -> float:
-    """
-    Calculate the distance between a set of lat-lon coordinates.
-    @param latlon_a: the latitude and longitude of the first object
-    @param latlon_b: the latitute and longitude of the second object
-    @return: the calculated distance
-    """
-    geod = pyproj.Geod(ellps='WGS84')
-    lat_a, lon_a = latlon_a
-    lat_b, lon_b = latlon_b
-    _, _, distance = geod.inv(lon_a, lat_a, lon_b, lat_b)
-    return distance
-
-
 def select_colocated_pairs(tracks: List[Track],
-                           min_delay: timedelta = timedelta(
-                               seconds=0),
-                           max_delay: timedelta = timedelta(
-                               seconds=120)) -> List[MeasurementPair]:
+                           min_delay: timedelta = timedelta(seconds=0),
+                           max_delay: timedelta = timedelta(seconds=120)) \
+        -> List[MeasurementPair]:
     """
     For a list of tracks, find pairs of measurements that are colocated, i.e.
     that do not share the same track name, but do share the owner. Also filter
@@ -183,32 +155,32 @@ def select_colocated_pairs(tracks: List[Track],
     final_pairs = []
     for track_a, track_b in combinations(tracks, 2):
         if track_a.owner == track_b.owner and track_a.name != track_b.name:
-            pairs = pair_measurements_based_on_time(track_a, track_b)
+            pairs = get_switches(track_a, track_b)
             pairs = filter_delay(pairs, min_delay, max_delay)
             final_pairs.extend(pairs)
     return final_pairs
 
 
-def generate_dislocated_pairs(measurement: Measurement, track: Track) \
+# TODO: we want the option to generate either common source or specific
+# source dislocated pairs. CS via manager set and using owner1 != owner2,
+# SS via histo's. In the Model class you might want to give the option for
+# CS/SS.
+def generate_pairs(measurement: Measurement, track: Track) \
         -> List[MeasurementPair]:
     """
-    Created paired measurements that are dislocated. We do so by linking one
-    specific measurement to every measurement of a given track.
+    Created paired measurements by linking one specific measurement to every
+    measurement of a given track.
     @param measurement: the measurement that will be linked to other
      measurements
     @track: the measurements of this track will be linked to the given
      measurement
-    @return: A list with dislocated paired measurements.
+    @return: A list with paired measurements.
     """
-    if measurement.extra['sensor'] is not None and \
-            measurement.extra['sensor'] != track.name:
-        pairs = []
-        for measurement_a in track:
-            pairs.append(MeasurementPair(measurement, measurement_a))
-        return pairs
-    else:
-        raise ValueError("Track and measurement owner are equal, therefore"
-                         "cannot generate dislocated pairs.")
+    pairs = []
+    for measurement_a in track:
+        pairs.append(MeasurementPair(measurement, measurement_a))
+    return pairs
+
 
 # TODO: Use the CalibratedScorer from lir instead of this class
 class CalibratedEstimator:
@@ -239,13 +211,13 @@ class MeasurementPairClassifier(Model):
 
     def __init__(self, colocated_training_data: List[Track]):
         self.training_data = colocated_training_data
-        self.colocated_training_pairs = select_colocated_pairs(self.training_data)
+        self.colocated_training_pairs = \
+            select_colocated_pairs(self.training_data)
 
     def predict_lr(self, track_a: Track, track_b: Track,
-                   interval: Tuple[datetime, datetime],
-                   background: Track,
+                   interval: Tuple[datetime, datetime], background: Track,
                    **kwargs) -> float:
-        pairs = pair_measurements_based_on_time(track_a, track_b)
+        pairs = get_switches(track_a, track_b)
         pair = make_pair_based_on_rarest_location_within_interval(
             paired_measurements=pairs,
             interval=interval,
@@ -256,17 +228,17 @@ class MeasurementPairClassifier(Model):
         # resulting pairs need not be really dislocated, but simulated
         # dislocation by temporally shifting track a's history towards the
         # timestamp of the singular measurement of track b
-        dislocated_training_pairs = generate_dislocated_pairs(
+        dislocated_training_pairs = generate_pairs(
             pair.measurement_b, background)
-        training_pairs = self.colocated_training_pairs + dislocated_training_pairs
+        training_pairs = self.colocated_training_pairs + \
+            dislocated_training_pairs
         training_labels = [1] * len(self.colocated_training_pairs) + [0] * len(
             dislocated_training_pairs)
 
         # calculate for each pair the distance between the two antennas
-        training_features = np.array(list(map(calculate_distance_for_pair,
+        training_features = np.array(list(map(lambda x: x.distance(),
                                               training_pairs))).reshape(-1, 1)
-        comparison_features = np.array(
-            [calculate_distance_for_pair(pair)]).reshape(-1, 1)
+        comparison_features = np.array([pair.distance()]).reshape(-1, 1)
 
         # scale the features
         scaler = StandardScaler()
