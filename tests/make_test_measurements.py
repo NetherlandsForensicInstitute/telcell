@@ -1,22 +1,30 @@
-"""Script to generate fake measurements-data for the telcell project."""
+"""
+Script to generate fake measurements-data for the telcell project.
+This script creates two collocated 'paths' for each device (name).
+"""
 
 import random
 import datetime
 from datetime import timedelta, timezone, datetime
-
+import itertools
 import numpy as np
 import pandas as pd
 
-df_list = []
-
+random.seed(1234)
 startdate = datetime(2023, 5, 17, 12, 00, 00, tzinfo=timezone.utc)
 
+# Setting that controls the length and width of the grid
 grid_length = 36
-# Create equally spaced WGS-84 coordinates within the range of the original data
-lon_range = np.linspace(start=3.60848669870189, stop=6.97261243364462, num=grid_length)
-lat_range = np.linspace(start=50.7885407786764, stop=53.2155513728185, num=grid_length)
+# Create equally spaced WGS-84 coordinates on the grid within the range of the original data
+lon_coords = np.linspace(start=3.60848669870189, stop=6.97261243364462, num=grid_length)
+lat_coords = np.linspace(start=50.7885407786764, stop=53.2155513728185, num=grid_length)
 
+dfs = []
 for name in ["Bas", "Tim", "Stijn", "Daan", "Koen", "Martijn", "Pieter", "Maarten", "Henk", "Hans"]:
+    # Random starting position on the grid (not exceeding the grid)
+    lon_idx = random.randint(0, grid_length-1)
+    lat_idx = random.randint(0, grid_length-1)
+
     track = []
     sensor = []
     timestamp = []
@@ -27,7 +35,6 @@ for name in ["Bas", "Tim", "Stijn", "Daan", "Koen", "Martijn", "Pieter", "Maarte
     lon_idxs = []
     lat_idxs = []
     date = startdate
-    lon_idx, lat_idx = round(grid_length / 2), round(grid_length / 2)  # Starting position (center)
 
     for day in range(5):
         for measurement in range(20):
@@ -39,16 +46,19 @@ for name in ["Bas", "Tim", "Stijn", "Daan", "Koen", "Martijn", "Pieter", "Maarte
 
             cell_identifier.append("123-4-5678-9012")
 
-            # Randomly choose between going Up/Down, Left/Right on the grid
-            dx = random.choice([0, 1, 2, -1, -2])
-            dy = random.choice([0, 1, 2, -1, -2])
+            # Randomly choose between going Up/Down, Left/Right on the grid. Staying neutral has a higher chance.
+            movements = [[(0,0)], list(itertools.product([-2, -1, 1, 2], [-2, -1, 1, 2]))]
+            neutral = 0.5 # chance of staying on the same position
+            weights = [[neutral], 16*[(1-neutral)/16]]
+            dx, dy = random.choices(list(itertools.chain(*movements)), weights=list(itertools.chain(*weights)))[0]
+
             # Movements cannot exceed the grid boundaries
             lon_idx = np.clip(lon_idx + dx, 0, grid_length-1)
             lat_idx = np.clip(lat_idx + dy, 0, grid_length-1)
 
-            lon.append(lon_range[lon_idx])
-            lat.append(lat_range[lat_idx])
-
+            lon.append(lon_coords[lon_idx])
+            lat.append(lat_coords[lat_idx])
+            # TODO: Add degrees functionality
             degrees.append(0)
 
             lon_idxs.append(lon_idx)
@@ -78,10 +88,10 @@ for name in ["Bas", "Tim", "Stijn", "Daan", "Koen", "Martijn", "Pieter", "Maarte
     df2["lat_index"] = df2["lat_index"].apply(
         lambda x: np.clip(x + random.choices([0, 1, -1], weights=[0.7, 0.15, 0.15])[0], 0, grid_length-1))
 
-    df2["celldb.wgs84.lon"] = df2["lon_index"].apply(lambda x: lon_range[x])
-    df2["celldb.wgs84.lat"] = df2["lat_index"].apply(lambda x: lat_range[x])
+    df2["celldb.wgs84.lon"] = df2["lon_index"].apply(lambda x: lon_coords[x])
+    df2["celldb.wgs84.lat"] = df2["lat_index"].apply(lambda x: lat_coords[x])
 
-    df_list.extend([df1, df2])
+    dfs.extend([df1, df2])
 
-final_df = pd.concat(df_list).reset_index(drop=True).drop(["lon_index", "lat_index"], axis=1)
-final_df.to_csv("test_measurements.csv", index_label="id")
+output_df = pd.concat(dfs).reset_index(drop=True).drop(["lon_index", "lat_index"], axis=1)
+output_df.to_csv("test_measurements.csv", index_label="id")
