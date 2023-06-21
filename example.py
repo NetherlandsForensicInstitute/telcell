@@ -9,6 +9,7 @@ from telcell.data.models import Track
 from telcell.data.parsers import parse_measurements_csv
 from telcell.data.utils import extract_intervals, split_track_by_interval
 from telcell.models import DummyModel
+from telcell.models.simplemodel import MeasurementPairClassifier
 from telcell.pipeline import run_pipeline
 from telcell.utils.savefile import make_output_plots
 
@@ -42,7 +43,8 @@ def dummy_cruncher(tracks: Iterable[Track]) \
 
         for start, end in intervals:
             single_day, other = split_track_by_interval(track_a, start, end)
-            yield single_day, track_b, {"background": other}
+            yield single_day, track_b, {"background": other,
+                                        "interval": (start, end)}
 
 
 def main():
@@ -54,7 +56,9 @@ def main():
     data = list(dummy_cruncher(tracks))
 
     # Specify the models that we want to evaluate.
-    models = [DummyModel()]
+    models = [DummyModel(), MeasurementPairClassifier(
+        colocated_training_data=parse_measurements_csv('measurements.csv'))]
+    # vul hier het correcte pad in (TODO: csv maken dat in commit kan)
 
     # Create an experiment setup using run_pipeline as the evaluation function
     setup = Setup(run_pipeline)
