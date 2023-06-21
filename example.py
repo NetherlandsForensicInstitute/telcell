@@ -3,11 +3,15 @@ from itertools import pairwise
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Mapping, Tuple
 
+from lrbenchmark.evaluation import Setup
+
 from telcell.data.models import Track
 from telcell.data.parsers import parse_measurements_csv
 from telcell.data.utils import extract_intervals, split_track_by_interval
 from telcell.models import DummyModel
+from telcell.models.simplemodel import MeasurementPairClassifier
 from telcell.pipeline import run_pipeline
+from telcell.utils.savefile import make_output_plots
 
 
 def dummy_cruncher(tracks: Iterable[Track]) \
@@ -39,7 +43,8 @@ def dummy_cruncher(tracks: Iterable[Track]) \
 
         for start, end in intervals:
             single_day, other = split_track_by_interval(track_a, start, end)
-            yield single_day, track_b, {"background": other}
+            yield single_day, track_b, {"background": other,
+                                        "interval": (start, end)}
 
 
 def main():
@@ -51,12 +56,34 @@ def main():
     data = list(dummy_cruncher(tracks))
 
     # Specify the models that we want to evaluate.
-    models = [DummyModel()]
+    models = [DummyModel(), MeasurementPairClassifier(
+        colocated_training_data=parse_measurements_csv('measurements.csv'))]
+    # vul hier het correcte pad in (TODO: csv maken dat in commit kan)
 
-    # Run the pipeline and print results.
-    lrs = run_pipeline(data, models, output_dir="scratch")
-    for model, predicted_lrs in zip(models, lrs):
-        print(f"{model.__class__.__name__}: {predicted_lrs}")
+    # Create an experiment setup using run_pipeline as the evaluation function
+    setup = Setup(run_pipeline)
+    # Specify the constant parameters for evaluation
+    setup.parameter('data', data)
+    # Specify the main output_dir
+    main_output_dir = Path('scratch')
+
+    # Specify the variable parameters for evaluation
+    # TODO Duidelijk
+    #  documenteren hoe je de grid moet definieren. Dit is een dict van
+    #  iterables. Bijvoorbeeld [models],  een lijst van modellen die
+    #  gedraaid moet worden. Of een lijst van verschillende parameters. Of
+    #  gewoon 'test' om de hele riedel 4x te draaien.
+    for variable, parameters, (predicted_lrs, y_true) in \
+            setup.run_full_grid({'model': models}):
+        model_name = parameters['model'].__class__.__name__
+        print(f"{model_name}: {predicted_lrs}")
+
+        unique_dir = '_'.join(f'{key}-{value}'
+                              for key, value in variable.items())
+        output_dir = main_output_dir / unique_dir
+        make_output_plots(predicted_lrs,
+                          y_true,
+                          output_dir)
 
 
 if __name__ == '__main__':

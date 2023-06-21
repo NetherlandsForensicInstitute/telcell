@@ -1,14 +1,20 @@
-import datetime
+from datetime import timedelta, datetime
+from itertools import combinations
 from typing import List, Tuple
 from collections import Counter
-
 import lir
+import numpy as np
+import pyproj
+from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
 from telcell.data.models import Measurement, Track, MeasurementPair
 from telcell.models import Model
 
+geod = pyproj.Geod(ellps='WGS84')
 
+
+# TODO: change the java-styled docstring to more python style (:param)
 def get_measurement_with_minimum_time_difference(track: Track,
                                                  timestamp: datetime) \
         -> Measurement:
@@ -41,14 +47,12 @@ def make_pair_based_on_time_difference(track: Track,
     return MeasurementPair(closest_measurement, measurement)
 
 
-def pair_measurements_based_on_time(track_a: Track,
-                                    track_b: Track) \
-        -> List[MeasurementPair]:
+def get_switches(track_a: Track, track_b: Track) -> List[MeasurementPair]:
     """
-    Pairs two tracks based on the time difference between the measurements.
-    It pairs all measurements from track_b to the closest pair of track_a,
-    meaning that not all measurements from track_a have to be present in the
-    final list!
+    Retrieves switches between two tracks, by pairing those based on the time
+    difference between the measurements. It pairs all measurements from track_b
+    to the closest pair of track_a, meaning that not all measurements from
+    track_a have to be present in the final list!
 
     @param track_a: A history of measurements for a single device.
     @param track_b: A history of measurements for a single device.
@@ -56,15 +60,13 @@ def pair_measurements_based_on_time(track_a: Track,
     """
     paired_measurements = []
     for measurement in track_b.measurements:
-        new_pair = make_pair_based_on_time_difference(track_a,
-                                                      measurement)
+        new_pair = make_pair_based_on_time_difference(track_a, measurement)
         paired_measurements.append(new_pair)
     return paired_measurements
 
 
 def filter_delay(paired_measurements: List[MeasurementPair],
-                 min_delay: datetime.timedelta,
-                 max_delay: datetime.timedelta) \
+                 min_delay: timedelta, max_delay: timedelta) \
         -> List[MeasurementPair]:
     """
     Filter the paired measurements based on a specified delay range. Can
@@ -79,12 +81,15 @@ def filter_delay(paired_measurements: List[MeasurementPair],
             if min_delay <= x.time_difference <= max_delay]
 
 
-def measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
+def make_pair_based_on_rarest_location_within_interval(
         paired_measurements: List[MeasurementPair],
-        interval: Tuple[datetime.datetime, datetime.datetime],
+        interval: Tuple[datetime, datetime],
         history_track: Track,
         round_lon_lats: bool) -> MeasurementPair:
     """
+    Creates a pair based on the rarest location of the track history. Also,
+    the pair must fall within a certain time interval.
+
     @param paired_measurements: A list with all paired measurements to
            consider.
     @param interval: the interval of time for which one measurement pair must
@@ -125,40 +130,126 @@ def measurement_pairs_with_rarest_location_per_interval_based_on_track_history(
     history_outside_interval = [x for x in history_track.measurements
                                 if not in_interval(x.timestamp, interval)]
 
-    location_counts = Counter(location_key(m) for m in history_outside_interval)
-    min_rarity, rarest_pair = min(((location_counts.get(location_key(pair.measurement_b), 0), pair)
-                                  for pair in pairs_in_interval), key=sort_key)
+    location_counts = Counter(
+        location_key(m) for m in history_outside_interval)
+    min_rarity, rarest_pair = min(
+        ((location_counts.get(location_key(pair.measurement_b), 0), pair)
+         for pair in pairs_in_interval), key=sort_key)
     return rarest_pair
 
 
-class CellDistance(Model):
-    def __init__(self, manager_data):
-        self.training_data = manager_data
+def select_colocated_pairs(tracks: List[Track],
+                           min_delay: timedelta = timedelta(seconds=0),
+                           max_delay: timedelta = timedelta(seconds=120)) \
+        -> List[MeasurementPair]:
+    """
+    For a list of tracks, find pairs of measurements that are colocated, i.e.
+    that do not share the same track name, but do share the owner. Also filter
+    the pairs based on a minimum and maximum time delay.
+    @param tracks: the tracks to find pairs of.
+    @param min_delay: the minimum amount of delay that is allowed.
+    @param max_delay: the maximum amount of delay that is allowed.
+    @return: A filtered list with all colocated paired measurements.
+    """
+    # TODO: this loop is now order n^2 and can (probably) rewritten to order n
+    final_pairs = []
+    for track_a, track_b in combinations(tracks, 2):
+        if track_a.owner == track_b.owner and track_a.name != track_b.name:
+            pairs = get_switches(track_a, track_b)
+            pairs = filter_delay(pairs, min_delay, max_delay)
+            final_pairs.extend(pairs)
+    return final_pairs
 
-    def predict_lr(self, track_a: Track, track_b: Track, interval, background, **kwargs) -> float:
-        pairs = pair_measurements_based_on_time(track_a, track_b)
-        pair = measurement_pairs_with_rarest_location_per_interval_based_on_track_history(  # TODO: fix name :D
-            pairs,
+
+# TODO: we want the option to generate either common source or specific
+# source dislocated pairs. CS via manager set and using owner1 != owner2,
+# SS via histo's. In the Model class you might want to give the option for
+# CS/SS.
+def generate_pairs(measurement: Measurement, track: Track) \
+        -> List[MeasurementPair]:
+    """
+    Created paired measurements by linking one specific measurement to every
+    measurement of a given track.
+    @param measurement: the measurement that will be linked to other
+     measurements
+    @track: the measurements of this track will be linked to the given
+     measurement
+    @return: A list with paired measurements.
+    """
+    pairs = []
+    for measurement_a in track:
+        pairs.append(MeasurementPair(measurement, measurement_a))
+    return pairs
+
+
+# TODO: Use the CalibratedScorer from lir instead of this class
+class CalibratedEstimator:
+    def __init__(self, estimator, calibrator):
+        self.estimator = estimator
+        self.calibrator = calibrator
+
+    def fit(self, X, y):
+        self.estimator.fit(X, y)
+        self.calibrator.fit(self.estimator.predict_proba(X)[:, 1], y)
+        return self
+
+    def predict_proba(self, X):
+        p1 = self.estimator.predict_proba(X)[:, 1]
+        p1 = lir.util.to_probability(self.calibrator.transform(p1))
+        return np.stack([1 - p1, p1], axis=1)
+
+
+class MeasurementPairClassifier(Model):
+    """
+    Model that computes a likelihood ratio based on the distance between two
+    antennas of a measurement pair. This pair is chosen based on the rarest
+    location and for a certain time interval. The distances are scaled using a
+    standard scaler. A logistic regression model is trained on colocated
+    and dislocated pairs and a KDE and ELUB bounder is used to calibrate
+    scores that are provided by the logistic regression.
+    """
+
+    def __init__(self, colocated_training_data: List[Track]):
+        self.training_data = colocated_training_data
+        self.colocated_training_pairs = \
+            select_colocated_pairs(self.training_data)
+
+    def predict_lr(self, track_a: Track, track_b: Track,
+                   interval: Tuple[datetime, datetime], background: Track,
+                   **kwargs) -> float:
+        pairs = get_switches(track_a, track_b)
+        pair = make_pair_based_on_rarest_location_within_interval(
+            paired_measurements=pairs,
             interval=interval,
             history_track=background,
-            round_lon_lats=False,
+            round_lon_lats=True,
         )
-        # TODO: implement select_colocated_pairs
-        colocated_training_pairs = select_colocated_pairs(self.training_data)
-        # resulting pairs need not be really dislocated, but simulated dislocation by temporally
-        # shifting track a's history towards the timestamp of the singular measurement of track b
-        # TODO: implement generate_dislocated_pairs
-        dislocated_training_pairs = generate_dislocated_pairs(pair.measurement_b, background)
-        training_pairs = colocated_training_pairs + dislocated_training_pairs
-        training_labels = [1] * len(colocated_training_pairs) + [0] * len(dislocated_training_pairs)
 
+        # resulting pairs need not be really dislocated, but simulated
+        # dislocation by temporally shifting track a's history towards the
+        # timestamp of the singular measurement of track b
+        dislocated_training_pairs = generate_pairs(
+            pair.measurement_b, background)
+        training_pairs = self.colocated_training_pairs + \
+            dislocated_training_pairs
+        training_labels = [1] * len(self.colocated_training_pairs) + [0] * len(
+            dislocated_training_pairs)
+
+        # calculate for each pair the distance between the two antennas
+        training_features = np.array(list(map(lambda x: x.distance,
+                                              training_pairs))).reshape(-1, 1)
+        comparison_features = np.array([pair.distance]).reshape(-1, 1)
+
+        # scale the features
         scaler = StandardScaler()
-
-        # TODO: implement calculate_distance (likely with pyproj, should be available somewhere already)
-        training_features = map(calculate_distance, training_pairs)
-        training_features = scaler.fit_transform(training_features)
-        self.estimator.fit(training_features, training_labels)
-
-        comparison_features = [calculate_distance(pair)]
+        scaler.fit(training_features)
+        training_features = scaler.transform(training_features)
         comparison_features = scaler.transform(comparison_features)
-        return lir.to_odds(self.estimator.predict_proba(comparison_features))
+
+        estimator = LogisticRegression()
+        calibrator = lir.ELUBbounder(lir.KDECalibrator(bandwidth=1.0))
+        calibrated_estimator = CalibratedEstimator(estimator, calibrator)
+        calibrated_estimator.fit(training_features, np.array(training_labels))
+
+        return float(lir.to_odds(calibrated_estimator.predict_proba(
+            comparison_features)[:, 1]))
