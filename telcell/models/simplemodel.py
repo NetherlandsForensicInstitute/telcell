@@ -236,9 +236,9 @@ class MeasurementPairClassifier(Model):
             dislocated_training_pairs)
 
         # calculate for each pair the distance between the two antennas
-        training_features = np.array(list(map(lambda x: x.distance(),
+        training_features = np.array(list(map(lambda x: x.distance,
                                               training_pairs))).reshape(-1, 1)
-        comparison_features = np.array([pair.distance()]).reshape(-1, 1)
+        comparison_features = np.array([pair.distance]).reshape(-1, 1)
 
         # scale the features
         scaler = StandardScaler()
