@@ -7,7 +7,7 @@ from telcell.data.models import Track
 from telcell.data.parsers import parse_measurements_csv
 from telcell.data.utils import extract_intervals, split_track_by_interval
 from telcell.models import DummyModel
-from telcell.models.simplemodel import CellDistance
+from telcell.models.simplemodel import MeasurementPairClassifier
 from telcell.pipeline import run_pipeline
 
 
@@ -53,7 +53,7 @@ def main():
     data = list(dummy_cruncher(tracks))
 
     # Specify the models that we want to evaluate.
-    models = [DummyModel(), CellDistance(
+    models = [DummyModel(), MeasurementPairClassifier(
         colocated_training_data=parse_measurements_csv('measurements.csv'))]
     # vul hier het correcte pad in (TODO: csv maken dat in commit kan)
 

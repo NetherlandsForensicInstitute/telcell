@@ -1,4 +1,4 @@
-import datetime
+from datetime import timedelta, datetime
 from collections import Counter
 from itertools import combinations
 from typing import List, Tuple
@@ -67,8 +67,8 @@ def pair_measurements_based_on_time(track_a: Track,
 
 
 def filter_delay(paired_measurements: List[MeasurementPair],
-                 min_delay: datetime.timedelta,
-                 max_delay: datetime.timedelta) \
+                 min_delay: timedelta,
+                 max_delay: timedelta) \
         -> List[MeasurementPair]:
     """
     Filter the paired measurements based on a specified delay range. Can
@@ -85,7 +85,7 @@ def filter_delay(paired_measurements: List[MeasurementPair],
 
 def make_pair_based_on_rarest_location_within_interval(
         paired_measurements: List[MeasurementPair],
-        interval: Tuple[datetime.datetime, datetime.datetime],
+        interval: Tuple[datetime, datetime],
         history_track: Track,
         round_lon_lats: bool) -> MeasurementPair:
     """
@@ -167,9 +167,9 @@ def calculate_distance_lat_lon(latlon_a: Tuple[float, float],
 
 
 def select_colocated_pairs(tracks: List[Track],
-                           min_delay: datetime.timedelta = datetime.timedelta(
+                           min_delay: timedelta = timedelta(
                                seconds=0),
-                           max_delay: datetime.timedelta = datetime.timedelta(
+                           max_delay: timedelta = timedelta(
                                seconds=120)) -> List[MeasurementPair]:
     """
     For a list of tracks, find pairs of measurements that are colocated, i.e.
@@ -180,6 +180,7 @@ def select_colocated_pairs(tracks: List[Track],
     @param max_delay: the maximum amount of delay that is allowed.
     @return: A filtered list with all colocated paired measurements.
     """
+    # TODO: this loop is now order n^2 and can (probably) rewritten to order n
     final_pairs = []
     for track_a, track_b in combinations(tracks, 2):
         if track_a.owner == track_b.owner and track_a.name != track_b.name:
@@ -207,10 +208,10 @@ def generate_dislocated_pairs(measurement: Measurement, track: Track) \
             pairs.append(MeasurementPair(measurement, measurement_a))
         return pairs
     else:
-        raise Exception("Track and measurement owner are equal, therefore"
-                        " cannot generate dislocated pairs.")
+        raise ValueError("Track and measurement owner are equal, therefore"
+                         "cannot generate dislocated pairs.")
 
-
+# TODO: Use the CalibratedScorer from lir instead of this class
 class CalibratedEstimator:
     def __init__(self, estimator, calibrator):
         self.estimator = estimator
@@ -227,7 +228,7 @@ class CalibratedEstimator:
         return np.stack([1 - p1, p1], axis=1)
 
 
-class CellDistance(Model):
+class MeasurementPairClassifier(Model):
     """
     Model that computes a likelihood ratio based on the distance between two
     antennas of a measurement pair. This pair is chosen based on the rarest
@@ -239,9 +240,10 @@ class CellDistance(Model):
 
     def __init__(self, colocated_training_data: List[Track]):
         self.training_data = colocated_training_data
+        self.colocated_training_pairs = select_colocated_pairs(self.training_data)
 
     def predict_lr(self, track_a: Track, track_b: Track,
-                   interval: Tuple[datetime.datetime, datetime.datetime],
+                   interval: Tuple[datetime, datetime],
                    background: Track,
                    **kwargs) -> float:
         pairs = pair_measurements_based_on_time(track_a, track_b)
@@ -252,14 +254,13 @@ class CellDistance(Model):
             round_lon_lats=True,
         )
 
-        colocated_training_pairs = select_colocated_pairs(self.training_data)
         # resulting pairs need not be really dislocated, but simulated
         # dislocation by temporally shifting track a's history towards the
         # timestamp of the singular measurement of track b
         dislocated_training_pairs = generate_dislocated_pairs(
             pair.measurement_b, background)
-        training_pairs = colocated_training_pairs + dislocated_training_pairs
-        training_labels = [1] * len(colocated_training_pairs) + [0] * len(
+        training_pairs = self.colocated_training_pairs + dislocated_training_pairs
+        training_labels = [1] * len(self.colocated_training_pairs) + [0] * len(
             dislocated_training_pairs)
 
         # calculate for each pair the distance between the two antennas
