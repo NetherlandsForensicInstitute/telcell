@@ -1,8 +1,7 @@
 from datetime import timedelta, datetime
-from collections import Counter
 from itertools import combinations
 from typing import List, Tuple
-
+from collections import Counter
 import lir
 import numpy as np
 import pyproj
