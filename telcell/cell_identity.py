@@ -1,5 +1,4 @@
 import re
-from functools import cached_property
 from typing import Optional, Any
 
 RADIO_GSM = "GSM"
@@ -8,8 +7,8 @@ RADIO_LTE = "LTE"
 RADIO_NR = "NR"
 
 CELL_IDENTITY_PATTERN = re.compile(
-    r'^((?P<radio>[a-zA-Z]+)/)?(?P<mcc>[0-9]+)-(?P<mnc>[0-9]+)'
-    + '(-((?P<lac>[0-9]+)-(?P<ci>[0-9]+)|(?P<eci>[0-9]+)))?$')
+    r'^((?P<radio>[a-zA-Z]+)/)?(?P<mcc>[0-9]+|\?)-(?P<mnc>[0-9]+|\?)'
+    + r'(-((?P<lac>[0-9]+|\?)-(?P<ci>[0-9]+|\?)|(?P<eci>[0-9]+|\?)))?$')
 
 
 class CellIdentity:
@@ -58,7 +57,9 @@ class CellIdentity:
         m = CELL_IDENTITY_PATTERN.match(spec)
 
         def convert_value(key: str, value: str) -> Any:
-            if value is None or key == "radio":
+            if value is None or value == "?":
+                return None
+            elif key == "radio":
                 return value
             else:
                 return int(value)
@@ -97,8 +98,7 @@ class CellIdentity:
         """
         return f"{self.mcc or '?'}-{self.mnc or '?'}"
 
-    @property
-    def unique_identifier(self) -> str:
+    def __str__(self) -> str:
         return self.plmn
 
     def is_complete(self) -> bool:
@@ -116,10 +116,10 @@ class CellIdentity:
         )
 
     def __repr__(self) -> str:
-        return f"CellIdentity({self.unique_identifier})"
+        return f"{self.__class__.__name__}({str(self)})"
 
     def __hash__(self):
-        return hash(self.unique_identifier)
+        return hash(str(self))
 
 
 class CellGlobalIdentity(CellIdentity):
@@ -137,8 +137,7 @@ class CellGlobalIdentity(CellIdentity):
         self.lac = lac
         self.ci = ci
 
-    @cached_property
-    def unique_identifier(self) -> str:
+    def __str__(self) -> str:
         if self.radio is not None:
             return f"{self.radio}/{self.cgi}"
         else:
@@ -175,9 +174,6 @@ class CellGlobalIdentity(CellIdentity):
             and self.ci == other.ci
         )
 
-    def __repr__(self) -> str:
-        return f"CellGlobalIdentity({self.cgi})"
-
 
 class GSMCell(CellGlobalIdentity):
     __hash__ = CellGlobalIdentity.__hash__
@@ -191,9 +187,6 @@ class GSMCell(CellGlobalIdentity):
             "radio": RADIO_GSM,
             "cgi": (self.mcc, self.mnc, self.lac, self.ci),
         }
-
-    def __repr__(self):
-        return f"GSMCell({self.cgi})"
 
 
 class UMTSCell(CellGlobalIdentity):
@@ -217,9 +210,6 @@ class UMTSCell(CellGlobalIdentity):
             "radio": RADIO_UMTS,
             "cgi": (self.mcc, self.mnc, self.lac, self.ci),
         }
-
-    def __repr__(self) -> str:
-        return f"UMTSCell({self.cgi})"
 
 
 class EutranCellGlobalIdentity(CellIdentity):
@@ -247,8 +237,7 @@ class EutranCellGlobalIdentity(CellIdentity):
             raise ValueError("eci must be of type `int`")
         self.eci = eci
 
-    @cached_property
-    def unique_identifier(self) -> str:
+    def __str__(self) -> str:
         if self.radio is not None:
             return f"{self.radio}/{self.ecgi}"
         else:
@@ -291,9 +280,6 @@ class LTECell(EutranCellGlobalIdentity):
             "ecgi": (self.mcc, self.mnc, self.eci),
         }
 
-    def __repr__(self):
-        return f"LTECell({self.ecgi})"
-
 
 class NRCell(EutranCellGlobalIdentity):
     __hash__ = EutranCellGlobalIdentity.__hash__
@@ -307,6 +293,3 @@ class NRCell(EutranCellGlobalIdentity):
             "radio": RADIO_NR,
             "ecgi": (self.mcc, self.mnc, self.eci),
         }
-
-    def __repr__(self):
-        return f"NRCell({self.ecgi})"
