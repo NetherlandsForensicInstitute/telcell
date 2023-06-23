@@ -1,5 +1,4 @@
 from datetime import timedelta, datetime
-from itertools import combinations
 from typing import List, Tuple
 from collections import Counter
 import lir
@@ -166,6 +165,7 @@ def select_colocated_pairs(tracks: List[Track],
             pairs = filter_delay(pairs, min_delay, max_delay)
             final_pairs.extend(pairs)
     return final_pairs
+
 
 # TODO: we want the option to generate either common source or specific
 # source dislocated pairs. CS via manager set and using owner1 != owner2,
