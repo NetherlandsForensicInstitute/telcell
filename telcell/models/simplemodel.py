@@ -11,8 +11,6 @@ from sklearn.preprocessing import StandardScaler
 from telcell.data.models import Measurement, Track, MeasurementPair
 from telcell.models import Model
 
-geod = pyproj.Geod(ellps='WGS84')
-
 
 # TODO: change the java-styled docstring to more python style (:param)
 def get_measurement_with_minimum_time_difference(track: Track,
@@ -22,9 +20,9 @@ def get_measurement_with_minimum_time_difference(track: Track,
     Finds the measurement in the track with the smallest time
     difference compared to the timestamp.
 
-    @param track: A history of measurements for a single device.
-    @param timestamp: The timestamp used to find the closest measurement.
-    @return: The measurement that is the closest to the timestamp
+    :param track: A history of measurements for a single device.
+    :param timestamp: The timestamp used to find the closest measurement.
+    :return: The measurement that is the closest to the timestamp
     """
     return min(track.measurements, key=lambda m: abs(m.timestamp - timestamp))
 
@@ -36,10 +34,10 @@ def make_pair_based_on_time_difference(track: Track,
     Creates a pair based on time difference. The closest measurement in
     absolute time will be paired to the measurement.
 
-    @param track: A history of measurements for a single device.
-    @param measurement: A single measurement of a device at a certain
+    :param track: A history of measurements for a single device.
+    :param measurement: A single measurement of a device at a certain
                         place and time.
-    @return: A pair of measurements.
+    :return: A pair of measurements.
     """
     closest_measurement = get_measurement_with_minimum_time_difference(
         track,
@@ -54,9 +52,9 @@ def get_switches(track_a: Track, track_b: Track) -> List[MeasurementPair]:
     to the closest pair of track_a, meaning that not all measurements from
     track_a have to be present in the final list!
 
-    @param track_a: A history of measurements for a single device.
-    @param track_b: A history of measurements for a single device.
-    @return: A list with all paired measurements.
+    :param track_a: A history of measurements for a single device.
+    :param track_b: A history of measurements for a single device.
+    :return: A list with all paired measurements.
     """
     paired_measurements = []
     for measurement in track_b.measurements:
@@ -72,10 +70,10 @@ def filter_delay(paired_measurements: List[MeasurementPair],
     Filter the paired measurements based on a specified delay range. Can
     return an empty list.
 
-    @param paired_measurements: A list with all paired measurements.
-    @param min_delay: the minimum amount of delay that is allowed.
-    @param max_delay: the maximum amount of delay that is allowed.
-    @return: A filtered list with all paired measurements.
+    :param paired_measurements: A list with all paired measurements.
+    :param min_delay: the minimum amount of delay that is allowed.
+    :param max_delay: the maximum amount of delay that is allowed.
+    :return: A filtered list with all paired measurements.
     """
     return [x for x in paired_measurements
             if min_delay <= x.time_difference <= max_delay]
@@ -90,14 +88,14 @@ def make_pair_based_on_rarest_location_within_interval(
     Creates a pair based on the rarest location of the track history. Also,
     the pair must fall within a certain time interval.
 
-    @param paired_measurements: A list with all paired measurements to
+    :param paired_measurements: A list with all paired measurements to
            consider.
-    @param interval: the interval of time for which one measurement pair must
+    :param interval: the interval of time for which one measurement pair must
            be chosen.
-    @param history_track: the whole history of the right track to find rarity
+    :param history_track: the whole history of the right track to find rarity
            of locations in the interval considered.
-    @param round_lon_lats: Can be toggled to round the lon/lats to two decimals
-    @return: The measurement pair that has the rarest location based on the
+    :param round_lon_lats: Can be toggled to round the lon/lats to two decimals
+    :return: The measurement pair that has the rarest location based on the
              history.
 
     TODO There is a problem with testdata, because those are almost continuous
@@ -146,10 +144,10 @@ def select_colocated_pairs(tracks: List[Track],
     For a list of tracks, find pairs of measurements that are colocated, i.e.
     that do not share the same track name, but do share the owner. Also filter
     the pairs based on a minimum and maximum time delay.
-    @param tracks: the tracks to find pairs of.
-    @param min_delay: the minimum amount of delay that is allowed.
-    @param max_delay: the maximum amount of delay that is allowed.
-    @return: A filtered list with all colocated paired measurements.
+    :param tracks: the tracks to find pairs of.
+    :param min_delay: the minimum amount of delay that is allowed.
+    :param max_delay: the maximum amount of delay that is allowed.
+    :return: A filtered list with all colocated paired measurements.
     """
     # TODO: this loop is now order n^2 and can (probably) rewritten to order n
     final_pairs = []
@@ -170,11 +168,11 @@ def generate_pairs(measurement: Measurement, track: Track) \
     """
     Created paired measurements by linking one specific measurement to every
     measurement of a given track.
-    @param measurement: the measurement that will be linked to other
+    :param measurement: the measurement that will be linked to other
      measurements
-    @track: the measurements of this track will be linked to the given
+    :param track: the measurements of this track will be linked to the given
      measurement
-    @return: A list with paired measurements.
+    :return: A list with paired measurements.
     """
     pairs = []
     for measurement_a in track:
@@ -248,8 +246,17 @@ class MeasurementPairClassifier(Model):
 
         estimator = LogisticRegression()
         calibrator = lir.ELUBbounder(lir.KDECalibrator(bandwidth=1.0))
+
+        calibrated_scorer = lir.CalibratedScorer(estimator, calibrator)
+        calibrated_scorer.fit(training_features, np.array(training_labels))
+
         calibrated_estimator = CalibratedEstimator(estimator, calibrator)
         calibrated_estimator.fit(training_features, np.array(training_labels))
 
+        lr_old = float(lir.to_odds(calibrated_estimator.predict_proba(
+            comparison_features)[:, 1]))
+        lr_new = float(calibrated_scorer.predict_lr(comparison_features))
+        print(lr_old, lr_new)
+        # those two values are not always equal
         return float(lir.to_odds(calibrated_estimator.predict_proba(
             comparison_features)[:, 1]))

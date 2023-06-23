@@ -38,7 +38,7 @@ def dummy_cruncher(tracks: Iterable[Track]) \
         intervals = extract_intervals(
             timestamps=(m.timestamp for m in track_a),
             start=start,
-            duration=datetime.timedelta(days=1)
+            duration=datetime.timedelta(minutes=10)
         )
 
         for start, end in intervals:
@@ -58,7 +58,7 @@ def main():
     # Specify the models that we want to evaluate.
     models = [DummyModel(), MeasurementPairClassifier(
         colocated_training_data=parse_measurements_csv('measurements.csv'))]
-    # vul hier het correcte pad in (TODO: csv maken dat in commit kan)
+    # vul hier het correcte pad in
 
     # Create an experiment setup using run_pipeline as the evaluation function
     setup = Setup(run_pipeline)
