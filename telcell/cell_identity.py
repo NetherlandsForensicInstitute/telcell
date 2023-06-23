@@ -8,7 +8,8 @@ RADIO_LTE = "LTE"
 RADIO_NR = "NR"
 
 CELL_IDENTITY_PATTERN = re.compile(
-    r'^((?P<radio>[a-zA-Z]+)/)?(?P<mcc>[0-9]+)-(?P<mnc>[0-9]+)(-((?P<lac>[0-9]+)-(?P<ci>[0-9]+)|(?P<eci>[0-9]+)))?$')
+    r'^((?P<radio>[a-zA-Z]+)/)?(?P<mcc>[0-9]+)-(?P<mnc>[0-9]+)'
+    + '(-((?P<lac>[0-9]+)-(?P<ci>[0-9]+)|(?P<eci>[0-9]+)))?$')
 
 
 class CellIdentity:
@@ -42,9 +43,11 @@ class CellIdentity:
         elif radio is not None:
             raise ValueError(f"unsupported radio technology: {radio}")
         elif eci is not None and (ci is None or lac is None):
-            return EutranCellGlobalIdentity(mcc, mnc, eci)  # we have `eci` but not `lac`, `ci` --> guess LTE/NR
+            # we have `eci` but not `lac`, `ci` --> guess LTE/NR
+            return EutranCellGlobalIdentity(mcc, mnc, eci)
         elif ci is not None and lac is not None and eci is None:
-            return CellGlobalIdentity(mcc, mnc, lac, ci)  # we have `lac` and `ci` but not `eci` --> guess GSM/UMTS
+            # we have `lac` and `ci` but not `eci` --> guess GSM/UMTS
+            return CellGlobalIdentity(mcc, mnc, lac, ci)
         elif eci is None and lac is None and ci is None:
             return CellIdentity(mcc, mnc)  # guess it's a cell
         else:

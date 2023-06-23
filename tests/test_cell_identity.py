@@ -14,6 +14,7 @@ CELL_IDENTITIES = [
     ("NR/204-1-2000", CellIdentity.create(radio=RADIO_NR, mcc=204, mnc=1, eci=2000)),
 ]
 
+
 def test_operators(testdata_path):
     for spec, ci in CELL_IDENTITIES:
         assert CellIdentity.parse(spec) == ci
