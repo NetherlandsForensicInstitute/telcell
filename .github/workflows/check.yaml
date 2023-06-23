@@ -13,4 +13,4 @@ jobs:
       - name: install dependencies
         run: pip install -r check-requirements.txt
       - name: run checks
-        run: flake8 telcell/
+        run: flake8 --max-line-length 120 telcell/
