@@ -4,7 +4,6 @@ from typing import List, Tuple
 from collections import Counter
 import lir
 import numpy as np
-import pyproj
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
