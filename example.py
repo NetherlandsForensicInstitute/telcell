@@ -36,7 +36,7 @@ def dummy_cruncher(tracks: Iterable[Track]) \
             datetime.time(5, tzinfo=earliest.tzinfo),
         )
 
-        # Find all intervals of a day represented in the data.
+        # Find all intervals of an hour represented in the data.
         intervals = extract_intervals(
             timestamps=(m.timestamp for m in track_a),
             start=start,
@@ -53,7 +53,7 @@ def main():
     """Main funtion that deals with the whole proces. 3 steps: Loading,
     crunching and evaluation."""
     # Loading data.
-    path = Path(__file__).parent / 'tests' / 'test_measurements.csv'
+    path = Path(__file__).parent / 'tests' / 'testdata.csv'
     tracks = parse_measurements_csv(path)
 
     # Crunch the data so that it fits our desired format.
