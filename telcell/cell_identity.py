@@ -51,7 +51,7 @@ class CellIdentity:
         elif eci is None and lac is None and ci is None:
             return CellIdentity(mcc, mnc)  # guess it's a cell
         else:
-            raise ValueError(f"either `ci` or `eci` should be provided, but not both")
+            raise ValueError("either `ci` or `eci` should be provided, but not both")
 
     @staticmethod
     def parse(spec: str) -> "CellIdentity":
