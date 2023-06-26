@@ -1,5 +1,4 @@
 from datetime import timedelta, datetime
-from itertools import combinations
 from typing import List, Tuple
 from collections import Counter
 import lir
@@ -151,11 +150,18 @@ def select_colocated_pairs(tracks: List[Track],
     @param max_delay: the maximum amount of delay that is allowed.
     @return: A filtered list with all colocated paired measurements.
     """
-    # TODO: this loop is now order n^2 and can (probably) rewritten to order n
+
+    tracks_per_owner = {}
+    for track in tracks:
+        if track.owner not in tracks_per_owner.keys():
+            tracks_per_owner[track.owner] = [track]
+        else:
+            tracks_per_owner[track.owner].append(track)
+
     final_pairs = []
-    for track_a, track_b in combinations(tracks, 2):
-        if track_a.owner == track_b.owner and track_a.name != track_b.name:
-            pairs = get_switches(track_a, track_b)
+    for tracks in tracks_per_owner.values():
+        if len(tracks) == 2:
+            pairs = get_switches(*tracks)
             pairs = filter_delay(pairs, min_delay, max_delay)
             final_pairs.extend(pairs)
     return final_pairs
