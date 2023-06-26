@@ -179,23 +179,6 @@ def generate_pairs(measurement: Measurement, track: Track) \
     return pairs
 
 
-# TODO: Use the CalibratedScorer from lir instead of this class
-class CalibratedEstimator:
-    def __init__(self, estimator, calibrator):
-        self.estimator = estimator
-        self.calibrator = calibrator
-
-    def fit(self, X, y):
-        self.estimator.fit(X, y)
-        self.calibrator.fit(self.estimator.predict_proba(X)[:, 1], y)
-        return self
-
-    def predict_proba(self, X):
-        p1 = self.estimator.predict_proba(X)[:, 1]
-        p1 = lir.util.to_probability(self.calibrator.transform(p1))
-        return np.stack([1 - p1, p1], axis=1)
-
-
 class MeasurementPairClassifier(Model):
     """
     Model that computes a likelihood ratio based on the distance between two
@@ -245,17 +228,7 @@ class MeasurementPairClassifier(Model):
 
         estimator = LogisticRegression()
         calibrator = lir.ELUBbounder(lir.KDECalibrator(bandwidth=1.0))
-
         calibrated_scorer = lir.CalibratedScorer(estimator, calibrator)
         calibrated_scorer.fit(training_features, np.array(training_labels))
 
-        calibrated_estimator = CalibratedEstimator(estimator, calibrator)
-        calibrated_estimator.fit(training_features, np.array(training_labels))
-
-        lr_old = float(lir.to_odds(calibrated_estimator.predict_proba(
-            comparison_features)[:, 1]))
-        lr_new = float(calibrated_scorer.predict_lr(comparison_features))
-        print(lr_old, lr_new)
-        # those two values are not always equal
-        return float(lir.to_odds(calibrated_estimator.predict_proba(
-            comparison_features)[:, 1]))
+        return float(calibrated_scorer.predict_lr(comparison_features))

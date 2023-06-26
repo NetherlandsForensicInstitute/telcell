@@ -57,7 +57,7 @@ def main():
 
     # Specify the models that we want to evaluate.
     models = [DummyModel(), MeasurementPairClassifier(
-        colocated_training_data=parse_measurements_csv('measurements.csv'))]
+        colocated_training_data=parse_measurements_csv('/measurements.csv'))]
     # vul hier het correcte pad in
 
     # Create an experiment setup using run_pipeline as the evaluation function
