@@ -10,7 +10,6 @@ from telcell.data.models import Measurement, Track, MeasurementPair
 from telcell.models import Model
 
 
-# TODO: change the java-styled docstring to more python style (:param)
 def get_measurement_with_minimum_time_difference(track: Track,
                                                  timestamp: datetime) \
         -> Measurement:
@@ -142,6 +141,7 @@ def select_colocated_pairs(tracks: List[Track],
     For a list of tracks, find pairs of measurements that are colocated, i.e.
     that do not share the same track name, but do share the owner. Also filter
     the pairs based on a minimum and maximum time delay.
+
     :param tracks: the tracks to find pairs of.
     :param min_delay: the minimum amount of delay that is allowed.
     :param max_delay: the maximum amount of delay that is allowed.
@@ -173,6 +173,7 @@ def generate_pairs(measurement: Measurement, track: Track) \
     """
     Created paired measurements by linking one specific measurement to every
     measurement of a given track.
+
     :param measurement: the measurement that will be linked to other
      measurements
     :param track: the measurements of this track will be linked to the given

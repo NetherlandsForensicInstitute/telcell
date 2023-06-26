@@ -50,7 +50,7 @@ def dummy_cruncher(tracks: Iterable[Track]) \
 
 
 def main():
-    """Main function that deals with the whole proces. 3 steps: Loading,
+    """Main function that deals with the whole process. Three steps: loading,
     crunching and evaluation."""
     # Loading data.
     path = Path(__file__).parent / 'tests' / 'testdata.csv'
