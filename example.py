@@ -1,3 +1,5 @@
+"""Script containing an example how to use telcell."""
+
 import datetime
 from itertools import pairwise
 from pathlib import Path
@@ -34,11 +36,11 @@ def dummy_cruncher(tracks: Iterable[Track]) \
             datetime.time(5, tzinfo=earliest.tzinfo),
         )
 
-        # Find all intervals of a day represented in the data.
+        # Find all intervals of an hour represented in the data.
         intervals = extract_intervals(
             timestamps=(m.timestamp for m in track_a),
             start=start,
-            duration=datetime.timedelta(days=1)
+            duration=datetime.timedelta(hours=1)
         )
 
         for start, end in intervals:
@@ -48,7 +50,9 @@ def dummy_cruncher(tracks: Iterable[Track]) \
 
 
 def main():
-    # Load data.
+    """Main funtion that deals with the whole proces. 3 steps: Loading,
+    crunching and evaluation."""
+    # Loading data.
     path = Path(__file__).parent / 'tests' / 'testdata.csv'
     tracks = parse_measurements_csv(path)
 
@@ -57,24 +61,25 @@ def main():
 
     # Specify the models that we want to evaluate.
     models = [DummyModel(), MeasurementPairClassifier(
-        colocated_training_data=parse_measurements_csv('measurements.csv'))]
-    # vul hier het correcte pad in (TODO: csv maken dat in commit kan)
+        colocated_training_data=parse_measurements_csv(
+            'tests/test_measurements.csv'))]
 
     # Create an experiment setup using run_pipeline as the evaluation function
     setup = Setup(run_pipeline)
     # Specify the constant parameters for evaluation
     setup.parameter('data', data)
-    # Specify the main output_dir
+    # Specify the main output_dir. Each model/parameter combination gets a
+    # directory in the main output directory.
     main_output_dir = Path('scratch')
 
-    # Specify the variable parameters for evaluation
-    # TODO Duidelijk
-    #  documenteren hoe je de grid moet definieren. Dit is een dict van
-    #  iterables. Bijvoorbeeld [models],  een lijst van modellen die
-    #  gedraaid moet worden. Of een lijst van verschillende parameters. Of
-    #  gewoon 'test' om de hele riedel 4x te draaien.
+    # Specify the variable parameters for evaluation in the variable 'grid'.
+    # This grid is a dict of iterables and all combinations will be used
+    # during the evaluation. An example is a list of all different models
+    # that need to be evaluated, or a list of different parameter settings
+    # for the models.
+    grid = {'model': models}
     for variable, parameters, (predicted_lrs, y_true) in \
-            setup.run_full_grid({'model': models}):
+            setup.run_full_grid(grid):
         model_name = parameters['model'].__class__.__name__
         print(f"{model_name}: {predicted_lrs}")
 
