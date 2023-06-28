@@ -82,7 +82,7 @@ class MeasurementPair:
 
     @cached_property
     def distance(self):
-        """Calculate the distance between two measurements of the pair."""
+        """Calculate the distance (in meters) between two measurements of the pair."""
         latlon_a = self.measurement_a.latlon
         latlon_b = self.measurement_b.latlon
         return calculate_distance_lat_lon(latlon_a, latlon_b)
@@ -102,11 +102,11 @@ def is_colocated(track_a: Track, track_b: Track) -> bool:
 def calculate_distance_lat_lon(latlon_a: Tuple[float, float],
                                latlon_b: Tuple[float, float]) -> float:
     """
-    Calculate the distance between a set of lat-lon coordinates.
+    Calculate the distance (in meters) between a set of lat-lon coordinates.
 
     :param latlon_a: the latitude and longitude of the first object
     :param latlon_b: the latitude and longitude of the second object
-    :return: the calculated distance
+    :return: the calculated distance in meters
     """
     lat_a, lon_a = latlon_a
     lat_b, lon_b = latlon_b
