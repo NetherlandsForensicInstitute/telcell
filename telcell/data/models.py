@@ -82,7 +82,8 @@ class MeasurementPair:
 
     @cached_property
     def distance(self):
-        """Calculate the distance (in meters) between two measurements of the pair."""
+        """Calculate the distance (in meters) between the two measurements of
+        the pair."""
         latlon_a = self.measurement_a.latlon
         latlon_b = self.measurement_b.latlon
         return calculate_distance_lat_lon(latlon_a, latlon_b)
