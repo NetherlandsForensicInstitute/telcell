@@ -15,7 +15,7 @@ def make_output_plots(lrs, y_true, output_dir):
 
     # Write metrics to disk.
     cllr = lir.metrics.cllr(lrs_array, y_true)
-    with open(output_dir / "lrs.txt", "w") as f:
+    with open(output_dir / "cllr.txt", "w") as f:
         f.write(str(cllr))  # TODO: formatting
 
     # Save visualizations to disk.
