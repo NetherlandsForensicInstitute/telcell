@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any, Iterator, Mapping, Sequence, Tuple
 from functools import cached_property
 
+import pandas as pd
 import pyproj
 
 GEOD = pyproj.Geod(ellps='WGS84')
@@ -51,6 +52,13 @@ class Track:
 
     def __iter__(self) -> Iterator[Measurement]:
         return iter(self.measurements)
+
+    def to_pandas(self):
+        df = pd.DataFrame(data=self.measurements).set_index('timestamp')
+        df['owner'] = self.owner
+        df['name'] = self.name
+
+        return df.sort_index()
 
 
 @dataclass(order=False)

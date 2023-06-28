@@ -25,5 +25,15 @@ Briefly summarized:
   used to offer interpretable (sub)-models for use in court.
 
 """
+from pathlib import Path
 
+from telcell.data.parsers import parse_measurements_csv
+
+
+if __name__ == '__main__':
+
+    path = Path(__file__).parent / 'tests' / 'test_measurements.csv'
+    tracks = parse_measurements_csv(path)
+    tracks_df = [track.to_pandas() for track in tracks]
+    print()
 
