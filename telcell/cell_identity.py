@@ -1,10 +1,11 @@
 import re
 from typing import Optional, Any
 
-RADIO_GSM = "GSM"
-RADIO_UMTS = "UMTS"
-RADIO_LTE = "LTE"
-RADIO_NR = "NR"
+class Radio(Enum):
+    GSM = "GSM"
+    UMTS = "UMTS"
+    LTE = "LTE"
+    NR = "NR"
 
 CELL_IDENTITY_PATTERN = re.compile(r"""
     ^
