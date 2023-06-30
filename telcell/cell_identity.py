@@ -1,11 +1,14 @@
 import re
+from enum import Enum
 from typing import Optional, Any
+
 
 class Radio(Enum):
     GSM = "GSM"
     UMTS = "UMTS"
     LTE = "LTE"
     NR = "NR"
+
 
 CELL_IDENTITY_PATTERN = re.compile(r"""
     ^
@@ -31,22 +34,26 @@ class CellIdentity:
 
     @staticmethod
     def create(*,
-        radio: Optional[str] = None,
-        mcc: Optional[int] = None,
-        mnc: Optional[int] = None,
-        lac: Optional[int] = None,
-        ci: Optional[int] = None,
-        eci: Optional[int] = None,
-    ) -> CellIdentity:
-        radio = radio.upper() if radio is not None else None
+               radio: Optional[Radio | str] = None,
+               mcc: Optional[int] = None,
+               mnc: Optional[int] = None,
+               lac: Optional[int] = None,
+               ci: Optional[int] = None,
+               eci: Optional[int] = None,
+               ) -> "CellIdentity":
 
-        if radio == RADIO_GSM:
+        if isinstance(radio, Radio):
+            radio = radio.value
+        elif radio is not None:
+            radio = str(radio).upper()
+
+        if radio == Radio.GSM.value:
             return GSMCell(mcc, mnc, lac, ci)
-        elif radio == RADIO_UMTS:
+        elif radio == Radio.UMTS.value:
             return UMTSCell(mcc, mnc, lac, ci)
-        elif radio == RADIO_LTE:
+        elif radio == Radio.LTE.value:
             return LTECell(mcc, mnc, eci)
-        elif radio == RADIO_NR:
+        elif radio == Radio.NR.value:
             return NRCell(mcc, mnc, eci)
         elif radio is not None:
             raise ValueError(f"unsupported radio technology: {radio}")
@@ -62,8 +69,23 @@ class CellIdentity:
             raise ValueError("either `ci` or `eci` should be provided, but not both")
 
     @staticmethod
-    def parse(spec: str) -> "CellIdentity":
-        m = CELL_IDENTITY_PATTERN.match(spec)
+    def parse(cell_identity: str) -> "CellIdentity":
+        """
+        Parse a string representation of a cell identity.
+
+        The input should be of one of the following formats:
+        * MCC-MNC-LAC-CI (a CGI, Cell Global Identity)
+        * MCC-MNC-CI (an eCGI, E-utran Cell Global Identity)
+
+        or, with radio specifier:
+        * GSM/MCC-MNC-LAC-CI
+        * UMTS/MCC-MNC-LAC-CI
+        * LTE/MCC-MNC-CI
+        * NR/MCC-MNC-CI
+
+        The values for MCC, MNC, LAC and CI may be substituted by a `?` character if unknown.
+        """
+        m = CELL_IDENTITY_PATTERN.match(cell_identity)
 
         def convert_value(key: str, value: str) -> Any:
             if value is None or value == "?":
@@ -87,8 +109,11 @@ class CellIdentity:
             mcc: Mobile Country Code (MCC, 3 digits)
             mnc: Mobile Network Code (MNC, 2 digits)
         """
-        assert mcc is None or isinstance(mcc, int), "mcc must be of type `int`"
-        assert mnc is None or isinstance(mnc, int), "mnc must be of type `int`"
+        if mcc is not None and not isinstance(mcc, int):
+            raise ValueError("mcc must be of type `int`")
+        if mnc is not None and not isinstance(mnc, int):
+            raise ValueError("mnc must be of type `int`")
+
         self.mcc = mcc
         self.mnc = mnc
 
@@ -118,10 +143,10 @@ class CellIdentity:
 
     def __eq__(self, other):
         return (
-            isinstance(other, CellIdentity)
-            and self.radio == other.radio
-            and self.mcc == other.mcc
-            and self.mnc == other.mnc
+                isinstance(other, CellIdentity)
+                and self.radio == other.radio
+                and self.mcc == other.mcc
+                and self.mnc == other.mnc
         )
 
     def __repr__(self) -> str:
@@ -141,8 +166,11 @@ class CellGlobalIdentity(CellIdentity):
 
     def __init__(self, mcc: int, mnc: int, lac: int, ci: int):
         super().__init__(mcc, mnc)
-        assert lac is None or isinstance(lac, int), "lac must be of type `int`"
-        assert ci is None or isinstance(ci, int), "ci must be of type `int`"
+        if lac is not None and not isinstance(lac, int):
+            raise ValueError("lac must be of type `int`")
+        if ci is not None and not isinstance(ci, int):
+            raise ValueError("ci must be of type `int`")
+
         self.lac = lac
         self.ci = ci
 
@@ -177,10 +205,10 @@ class CellGlobalIdentity(CellIdentity):
 
     def __eq__(self, other):
         return (
-            isinstance(other, CellGlobalIdentity)
-            and super().__eq__(other)
-            and self.lac == other.lac
-            and self.ci == other.ci
+                isinstance(other, CellGlobalIdentity)
+                and super().__eq__(other)
+                and self.lac == other.lac
+                and self.ci == other.ci
         )
 
 
@@ -189,13 +217,7 @@ class GSMCell(CellGlobalIdentity):
 
     @property
     def radio(self) -> str:
-        return RADIO_GSM
-
-    def _asdict(self) -> dict:
-        return {
-            "radio": RADIO_GSM,
-            "cgi": (self.mcc, self.mnc, self.lac, self.ci),
-        }
+        return Radio.GSM.value
 
 
 class UMTSCell(CellGlobalIdentity):
@@ -212,13 +234,7 @@ class UMTSCell(CellGlobalIdentity):
 
     @property
     def radio(self) -> str:
-        return RADIO_UMTS
-
-    def _asdict(self) -> dict:
-        return {
-            "radio": RADIO_UMTS,
-            "cgi": (self.mcc, self.mnc, self.lac, self.ci),
-        }
+        return Radio.UMTS.value
 
 
 class EutranCellGlobalIdentity(CellIdentity):
@@ -270,9 +286,9 @@ class EutranCellGlobalIdentity(CellIdentity):
 
     def __eq__(self, other):
         return (
-            isinstance(other, EutranCellGlobalIdentity)
-            and super().__eq__(other)
-            and self.eci == other.eci
+                isinstance(other, EutranCellGlobalIdentity)
+                and super().__eq__(other)
+                and self.eci == other.eci
         )
 
 
@@ -281,13 +297,7 @@ class LTECell(EutranCellGlobalIdentity):
 
     @property
     def radio(self) -> str:
-        return RADIO_LTE
-
-    def _asdict(self) -> dict:
-        return {
-            "radio": RADIO_LTE,
-            "ecgi": (self.mcc, self.mnc, self.eci),
-        }
+        return Radio.LTE.value
 
 
 class NRCell(EutranCellGlobalIdentity):
@@ -295,10 +305,4 @@ class NRCell(EutranCellGlobalIdentity):
 
     @property
     def radio(self) -> str:
-        return RADIO_NR
-
-    def _asdict(self) -> dict:
-        return {
-            "radio": RADIO_NR,
-            "ecgi": (self.mcc, self.mnc, self.eci),
-        }
+        return Radio.NR.value
