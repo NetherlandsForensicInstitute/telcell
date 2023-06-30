@@ -29,14 +29,14 @@ class CellIdentity:
     """
 
     @staticmethod
-    def create(
+    def create(*,
         radio: Optional[str] = None,
         mcc: Optional[int] = None,
         mnc: Optional[int] = None,
         lac: Optional[int] = None,
         ci: Optional[int] = None,
         eci: Optional[int] = None,
-    ) -> "CellIdentity":
+    ) -> CellIdentity:
         radio = radio.upper() if radio is not None else None
 
         if radio == RADIO_GSM:
