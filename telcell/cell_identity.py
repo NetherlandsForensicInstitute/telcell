@@ -6,9 +6,17 @@ RADIO_UMTS = "UMTS"
 RADIO_LTE = "LTE"
 RADIO_NR = "NR"
 
-CELL_IDENTITY_PATTERN = re.compile(
-    r'^((?P<radio>[a-zA-Z]+)/)?(?P<mcc>[0-9]+|\?)-(?P<mnc>[0-9]+|\?)'
-    + r'(-((?P<lac>[0-9]+|\?)-(?P<ci>[0-9]+|\?)|(?P<eci>[0-9]+|\?)))?$')
+CELL_IDENTITY_PATTERN = re.compile(r"""
+    ^
+    ((?P<radio>[a-zA-Z]+)/)?
+    (?P<mcc>[0-9]+|\?)
+    -(?P<mnc>[0-9]+|\?)
+    (-(
+        (?P<lac>[0-9]+|\?)
+        -(?P<ci>[0-9]+|\?)|(?P<eci>[0-9]+|\?)
+    ))?
+    $
+""", re.VERBOSE)
 
 
 class CellIdentity:
