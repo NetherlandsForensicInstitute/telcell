@@ -1,5 +1,5 @@
 [flake8]
-max-line-length = 79
+max-line-length = 120
 application_import_names = telcell
 import-order-style = pycharm
 per-file-ignores =
