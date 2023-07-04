@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime
 from typing import List, Tuple
-from collections import Counter
+from collections import Counter, defaultdict
 import lir
 import numpy as np
 from sklearn.linear_model import LogisticRegression
@@ -147,13 +147,9 @@ def select_colocated_pairs(tracks: List[Track],
     :param max_delay: the maximum amount of delay that is allowed.
     :return: A filtered list with all colocated paired measurements.
     """
-
-    tracks_per_owner = {}
+    tracks_per_owner = defaultdict(list)
     for track in tracks:
-        if track.owner not in tracks_per_owner.keys():
-            tracks_per_owner[track.owner] = [track]
-        else:
-            tracks_per_owner[track.owner].append(track)
+        tracks_per_owner[track.owner].append(track)
 
     final_pairs = []
     for tracks in tracks_per_owner.values():
