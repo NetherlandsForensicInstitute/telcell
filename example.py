@@ -44,9 +44,9 @@ def dummy_cruncher(tracks: Iterable[Track]) \
         )
 
         for start, end in intervals:
-            single_day, other = split_track_by_interval(track_a, start, end)
-            yield single_day, track_b, {"background": other,
-                                        "interval": (start, end)}
+            single_hour, other = split_track_by_interval(track_a, start, end)
+            yield single_hour, track_b, {"background": other,
+                                         "interval": (start, end)}
 
 
 def main():
