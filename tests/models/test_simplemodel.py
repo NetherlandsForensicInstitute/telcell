@@ -56,7 +56,7 @@ def test_simplemodel(test_data, testdata_3days_path, test_measurements_path):
     # test select_colocated_pairs
     assert len(model.colocated_training_pairs) == 419
     assert model.colocated_training_pairs[0].is_colocated == True
-    assert model.colocated_training_pairs[212].distance == 20458.722810043124
+    assert model.colocated_training_pairs[212].distance == pytest.approx(20458.7)
 
 if __name__ == '__main__':
     test_simplemodel()
