@@ -24,6 +24,7 @@ def testdata_3days_path():
     # folder
     return Path(__file__).parent / 'testdata_3days.csv'
 
+
 @pytest.fixture
 def test_measurements_path():
     # create an absolute reference to the "test_measurements.csv" in the tests
