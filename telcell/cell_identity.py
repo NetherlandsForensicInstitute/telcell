@@ -225,13 +225,13 @@ class GSMCell(CellGlobalIdentity):
 class UMTSCell(CellGlobalIdentity):
     __hash__ = CellGlobalIdentity.__hash__
 
-    def __init__(self, mcc: int, mnc: int, tac: int, ci: int):
+    def __init__(self, mcc: int, mnc: int, lac: int, ci: int):
         """
         For UMTS antennas, not the CI may be provided (e.g. in Android OS), but
         the "full CI". This is a concatenation of the Radio Network Controller
         (RNC) and CI.
         """
-        super().__init__(mcc, mnc, tac, ci)
+        super().__init__(mcc, mnc, lac, ci)
         self.rnc = ci >> 16 if ci is not None else None
 
     @property
