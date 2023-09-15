@@ -29,8 +29,8 @@ def split_track_by_interval(
         else:
             remaining_measurements.append(measurement)
 
-    selected = Track(track.owner, track.name, selected_measurements)
-    remaining = Track(track.owner, track.name, remaining_measurements)
+    selected = Track(track.owner, track.device, selected_measurements)
+    remaining = Track(track.owner, track.device, remaining_measurements)
     return selected, remaining
 
 

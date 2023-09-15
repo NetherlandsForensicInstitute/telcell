@@ -15,7 +15,7 @@ dependencies = (
 
 setup(
     name='telcell',
-    version='0.0.1',
+    version='0.0.2',
     author='Netherlands Forensics Institute',
     description='Calculating LRs for Collocated Tracks',
     long_description=long_description,

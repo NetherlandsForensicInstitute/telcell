@@ -8,6 +8,6 @@ def test_dummy_model(testdata_path):
     track_b = tracks[1]
 
     dummy_model = DummyModel()
-    prediction = dummy_model.predict_lr(track_a, track_b)
+    prediction, _ = dummy_model.predict_lr(track_a, track_b)
 
     assert prediction == 1.0

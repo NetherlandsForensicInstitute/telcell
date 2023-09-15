@@ -1,4 +1,4 @@
-from telcell.data.models import is_colocated
+from telcell.utils.transform import is_colocated
 from telcell.data.parsers import parse_measurements_csv
 
 

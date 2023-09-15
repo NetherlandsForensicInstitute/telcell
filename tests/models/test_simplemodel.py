@@ -1,8 +1,7 @@
 from datetime import timedelta, datetime, timezone
 
 from telcell.data.parsers import parse_measurements_csv
-from telcell.models.simplemodel import get_switches, filter_delay,\
-    make_pair_based_on_rarest_location_within_interval
+from telcell.utils.transform import get_switches, filter_delay, sort_pairs_based_on_rarest_location
 
 
 def test_simplemodel(testdata_3days_path):
@@ -10,32 +9,16 @@ def test_simplemodel(testdata_3days_path):
 
     paired_measurements = get_switches(track_a, track_b)
 
-    min_delay_td = timedelta(seconds=0)
     max_delay_td = timedelta(seconds=120)
 
     filtered_measurement_pairs = filter_delay(paired_measurements,
-                                              min_delay_td,
                                               max_delay_td)
 
-    assert len(paired_measurements) == 4320
-    assert len(filtered_measurement_pairs) == 4320
-
-    min_delay_td = timedelta(seconds=10)
-    max_delay_td = timedelta(seconds=120)
-
-    filtered_measurement_pairs = filter_delay(paired_measurements,
-                                              min_delay_td,
-                                              max_delay_td)
-
-    assert len(filtered_measurement_pairs) == 1926
-
-    start_of_interval = datetime(2023, 5, 18, 00, 00, 00, tzinfo=timezone.utc)
-    end_of_interval = datetime(2023, 5, 19, 00, 00, 00, tzinfo=timezone.utc)
+    assert len(paired_measurements) == len(filtered_measurement_pairs)
 
     rarest_measurement_pair = \
-        make_pair_based_on_rarest_location_within_interval(
+        sort_pairs_based_on_rarest_location(
             filtered_measurement_pairs,
-            (start_of_interval, end_of_interval),
             track_b,
-            round_lon_lats=True)
+            round_lon_lats=True)[0][1]
     assert rarest_measurement_pair

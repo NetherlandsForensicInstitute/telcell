@@ -10,3 +10,4 @@ venv/
 scratch/
 
 .coverage
+telcell.egg-info/
