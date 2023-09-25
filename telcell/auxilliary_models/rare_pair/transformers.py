@@ -13,8 +13,8 @@ from telcell.data.models import Measurement
 
 class BaseTransformer:
     @abstractmethod
-    def get_features(self, measurements: List[Measurement]) -> Tuple[
-        List[Tuple[Any]], List[int]]:
+    def get_features(self, measurements: List[Measurement]) \
+            -> Tuple[List[Tuple[Any]], List[int]]:
         """
         Takes a list of measurements and returns per measurement a tuple with the features and the y values.
         :param measurements: list of measurements containing the gps locations and the positive and negative antennas
@@ -42,8 +42,8 @@ class AngleDistanceTransformer(BaseTransformer):
 
     @staticmethod
     def prepare_measurement(gps_location: Measurement,
-                            measurements: List[Measurement]) -> Tuple[
-        tf.Tensor, tf.Tensor, tf.Tensor]:
+                            measurements: List[Measurement]) \
+            -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         """
         Takes a gps location and a list of antennas and returns them in tensor format for speedy computations
         """
@@ -79,8 +79,8 @@ class AngleDistanceTransformer(BaseTransformer):
                                       antennas_coords_tensor)
         return distances.numpy().flatten().tolist()
 
-    def get_features(self, measurements: List[CoverageData]) -> Tuple[
-        List[Tuple[int, int]], List[int]]:
+    def get_features(self, measurements: List[CoverageData]) \
+            -> Tuple[List[Tuple[int, int]], List[int]]:
         """
         For each measurement a list containing the angle and the distance per antenna is returned.
         :param measurements: List of measurements to calculate features for.

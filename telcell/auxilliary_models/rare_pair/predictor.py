@@ -1,6 +1,5 @@
 from typing import Mapping, Tuple, Sequence, Optional
 
-import numpy as np
 from more_itertools import first
 
 from telcell.auxilliary_models.rare_pair.utils import Bin

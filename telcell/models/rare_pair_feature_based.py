@@ -1,5 +1,3 @@
-import logging
-import os
 from itertools import groupby
 from typing import Sequence, Mapping, Optional, List, Any, Tuple
 
@@ -45,7 +43,8 @@ class RarePairModel(Model):
             measurements = [m for m in measurements if m.extra['mnc'] in filter['mnc']]
         return Track(measurements=measurements, device=track.device, owner=track.owner)
 
-    def predict_lr(self, track_a: Track, track_b: Track, **kwargs) -> Tuple[Optional[float], Optional[Mapping[str, Any]]]:
+    def predict_lr(self, track_a: Track, track_b: Track, **kwargs) \
+            -> Tuple[Optional[float], Optional[Mapping[str, Any]]]:
         track_a = self.filter_track(track_a, filter=kwargs['filter'])
         track_b = self.filter_track(track_b, filter=kwargs['filter'])
         if not track_a or not track_b:
@@ -77,13 +76,12 @@ class RarePairModel(Model):
         for (mnc, bin), group in groupby(sorted(self.coverage_training_data,
                                                 key=lambda x: (x.positive_antenna.extra['mnc'], x.get_bin(self.bins))),
                                          lambda x: (x.positive_antenna.extra['mnc'], x.get_bin(self.bins))):
+            _model = CorrectedPriorsModel(model=LogisticRegression, penalty=None)
+            _calibrator = CorrectedPriorsModel(IsotonicRegression, y_min=0, y_max=1, out_of_bounds='clip')
             model = ExtendedAngleDistanceClassificationCoverageModel(outer_diameter=28000, outer_resolution=500,
                                                                      inner_diameter=4000, inner_resolution=50,
-                                                                     model=CorrectedPriorsModel(
-                                                                         model=LogisticRegression, penalty=None),
-                                                                     calibrator=CorrectedPriorsModel(IsotonicRegression,
-                                                                                                     y_min=0, y_max=1,
-                                                                                                     out_of_bounds='clip'))
+                                                                     model=_model,
+                                                                     calibrator=_calibrator)
 
             if self.fit_models:
                 x, y = transformer.get_features(group)

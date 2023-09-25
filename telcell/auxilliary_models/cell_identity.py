@@ -152,8 +152,11 @@ class CellIdentity:
         return 0 < self.mcc < 1000 and 0 < self.mnc < 100
 
     def __eq__(self, other):
-        return (isinstance(other,
-                           CellIdentity) and self.radio == other.radio and self.mcc == other.mcc and self.mnc == other.mnc)
+        return \
+            (isinstance(other, CellIdentity)
+             and self.radio == other.radio
+             and self.mcc == other.mcc
+             and self.mnc == other.mnc)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({str(self)})"

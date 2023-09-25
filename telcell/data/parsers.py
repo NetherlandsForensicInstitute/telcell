@@ -38,16 +38,13 @@ def parse_measurements_csv(path: Union[str, Path]) -> List[Track]:
         #   2. device
         #   3. timestamp
         # If this is not the case, we first have to call `sorted()` here.
-
         measurements_sorted = sorted(reader,
                                      key=lambda row: (row["owner"],
                                                       row["device"],
                                                       row["timestamp"]))
 
-        for (owner, device), group in groupby(
-                sorted(reader, key=lambda row: (row["owner"], row["device"])),
-                key=lambda row: (row["owner"], row["device"])
-        ):
+        for (owner, device), group \
+                in groupby(measurements_sorted, key=lambda row: (row["owner"], row["device"])):
             # In practice, we might need to consult an external database to
             # retrieve the (lat, lon) coordinates. In this case, they have
             # already been included in the `measurements.csv` input file.
@@ -82,11 +79,11 @@ def parse_coverage_data_csv(path: Union[str, Path]) -> List[CoverageData]:
             measurement = Measurement(
                 coords=Point(lat=float(row['antenna_lat']), lon=float(row['antenna_lon'])),
                 timestamp=None,
-                extra = {'bandwidth': row['antenna_bandwidth'],
-                         'height': row['antenna_height'],
-                         'azimuth': row['antenna_azimuth'],
-                         'mnc': row['antenna_mnc'],
-                         'radio': row['antenna_radio']})
+                extra={'bandwidth': row['antenna_bandwidth'],
+                       'height': row['antenna_height'],
+                       'azimuth': row['antenna_azimuth'],
+                       'mnc': row['antenna_mnc'],
+                       'radio': row['antenna_radio']})
             if key not in data:
                 data[key] = {
                     'location': Measurement(

@@ -185,7 +185,7 @@ class AngleDistanceClassificationCoverageModel(CoverageModel):
         :param y_cal: label (connection yes/no) for antennas to calibrate model on
         """
         if isinstance(self.model, CorrectedPriorsModel):
-            if not 'fake_prior_odds' in kwargs or not 'true_prior_odds' in kwargs:
+            if 'fake_prior_odds' not in kwargs or 'true_prior_odds' not in kwargs:
                 raise ValueError(
                     "Cannot fit CorrectedPriorsModel without fake_prior_odds or true_prior_odds")
             self.model.fit(x, y, fake_prior_odds=kwargs['fake_prior_odds'],
@@ -212,7 +212,7 @@ class AngleDistanceClassificationCoverageModel(CoverageModel):
         y = np.append(y, [1, 0])
 
         # init and fit calibrator
-        if not 'fake_prior_odds' in kwargs or not 'true_prior_odds' in kwargs:
+        if 'fake_prior_odds' not in kwargs or 'true_prior_odds' not in kwargs:
             raise ValueError(
                 "Cannot fit CorrectedPriorsModel without fake_prior_odds or true_prior_odds")
         self.calibrator.fit(predictions, y,
@@ -286,7 +286,7 @@ class CoverageData:
     time_diff_s: Optional[int] = None
 
     def get_bin(self, possible_bins):
-        if not self.time_diff_s is None:
+        if self.time_diff_s is not None:
             # we may only have time diffs, but not actual time stamps. use that one
             delta_t = self.time_diff_s
         else:

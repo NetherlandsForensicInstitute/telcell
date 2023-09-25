@@ -35,14 +35,14 @@ def make_output_plots(lrs, y_true, output_dir: Union[pathlib.Path, str] = '.', i
         # log any 'None' LRs (=method could not provide an LR)
         print(f'{nr_nans} LR values were not provided (=None)')
         if ignore_missing_lrs:
-            print(f'Dropping LRs that are None')
+            print('Dropping LRs that are None')
             mask = ~np.isnan(lrs)
 
             # Use the mask to filter both arrays a and b
             lrs = lrs[mask]
             y_true = y_true[mask]
         else:
-            print(f'Treating LRs that are None as 1')
+            print('Treating LRs that are None as 1')
             lrs = np.nan_to_num(lrs, nan=1)
 
     # Write metrics to disk.
@@ -79,7 +79,8 @@ def write_lrs(lrs: Sequence[Optional[float]], output_dir: pathlib.Path,
     output_dir.mkdir(parents=True, exist_ok=True)
 
     assert len(track_pairs) == len(
-        lrs), f'Assuming we have information on all track pairs, but there are {len(lrs)} lrs and {len(track_pairs)} pairs'
+        lrs), f'Assuming we have information on all track pairs, ' \
+              f'but there are {len(lrs)} lrs and {len(track_pairs)} pairs'
     with (open(os.path.join(output_dir, 'lrs_per_track_pair.csv'), 'w', newline='') as file):
         writer = csv.writer(file)
         writer.writerow(['lr', 'track_a_owner', 'track_a_device', 'track_b_owner',

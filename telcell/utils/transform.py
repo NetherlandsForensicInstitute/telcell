@@ -1,10 +1,8 @@
-import datetime
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, time
 from itertools import pairwise
 from typing import Iterator, Tuple, Mapping, Any, List
 
-from telcell.auxilliary_models.rare_pair.utils import Bin
 from telcell.data.models import Measurement, Track, MeasurementPair
 from telcell.data.utils import extract_intervals, split_track_by_interval
 
@@ -93,8 +91,7 @@ def get_switches(track_a: Track, track_b: Track) -> List[MeasurementPair]:
     """
     if track_a.device == track_b.device and track_a.owner == track_b.owner:
         raise ValueError('No switches exist if the tracks are from the same device')
-    combined_tracks = [(m, 'a') for m in track_a.measurements] \
-                      + [(m, 'b') for m in track_b.measurements]
+    combined_tracks = [(m, 'a') for m in track_a.measurements] + [(m, 'b') for m in track_b.measurements]
     combined_tracks = sorted(combined_tracks, key=lambda x: x[0].timestamp)
     paired_measurements = []
     for (measurement_first, origin_first), (measurement_second, origin_second) in pairwise(combined_tracks):
@@ -204,7 +201,6 @@ def select_colocated_pairs(tracks: List[Track],
             pairs = filter_delay(pairs, max_delay)
             final_pairs.extend(pairs)
     return final_pairs
-
 
 
 def generate_all_pairs(measurement: Measurement, track: Track) \

@@ -126,14 +126,15 @@ def validate_classification_coverage_model(model: RarePairModel, priors, out_fol
     for split_nr, (mnc, bin) in tqdm(combinations, desc='validating classification models'):
         # fit and calibrate coverage model for this split and model
         x_train, y_train = reference_data.get_reference_data(split_nr, bin, mnc)
-        coverage_model = ExtendedAngleDistanceClassificationCoverageModel(outer_diameter=28000,
-                                                                              outer_resolution=500,
-                                                                 inner_diameter=4000, inner_resolution=50,
-                                                                 model=CorrectedPriorsModel(model=LogisticRegression,
-                                                                                            penalty=None),
-                                                                 calibrator=CorrectedPriorsModel(IsotonicRegression,
-                                                                                                 y_min=0, y_max=1,
-                                                                                                 out_of_bounds='clip'))
+        _model = CorrectedPriorsModel(model=LogisticRegression, penalty=None)
+        _calibrator = CorrectedPriorsModel(IsotonicRegression, y_min=0, y_max=1, out_of_bounds='clip')
+        coverage_model = \
+            ExtendedAngleDistanceClassificationCoverageModel(outer_diameter=28000,
+                                                             outer_resolution=500,
+                                                             inner_diameter=4000,
+                                                             inner_resolution=50,
+                                                             model=_model,
+                                                             calibrator=_calibrator)
         coverage_model.fit(x_train, y_train, x_cal=x_train, y_cal=y_train, **priors.get(mnc))
         # get the test data for the model that was trained for the (bin, mnc) combination
         X_test, y_test = reference_data.get_test_data(split_nr, bin, mnc)

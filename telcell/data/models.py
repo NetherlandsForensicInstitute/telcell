@@ -31,6 +31,7 @@ GEOD_WGS84 = pyproj.Geod(ellps='WGS84')
 def approximately_equal(first, second, tolerance=.0001):
     return abs(first - second) < tolerance
 
+
 @dataclass(frozen=True)
 class RDPoint:
     x: float
@@ -39,8 +40,8 @@ class RDPoint:
     def __post_init__(self):
         if self.x < rd_x_range[0] or self.x > rd_x_range[1] or self.y < \
                 rd_y_range[0] or self.y > rd_y_range[1]:
-            raise ValueError(
-                f'Invalid rijksdriehoek coordinates: ({self.x=}, {self.y=}); allowed range: x={rd_x_range}, y={rd_y_range}.')
+            raise ValueError(f'Invalid rijksdriehoek coordinates: ({self.x=}, {self.y=}); '
+                             f'allowed range: x={rd_x_range}, y={rd_y_range}.')
 
     @property
     def xy(self) -> Tuple[float, float]:
@@ -57,9 +58,9 @@ class RDPoint:
     def approx_equal(self, other: Union[RDPoint, Point], tolerance_m: float = 1) -> bool:
         return self.distance(other) < tolerance_m
 
-
     def __repr__(self):
         return f'RDPoint(x={self.x}, y={self.y})'
+
 
 @dataclass(frozen=True)
 class Point:
@@ -94,7 +95,7 @@ class Point:
             return False
 
     def __repr__(self):
-       return f'Point(lat={self.lat}, lon={self.lon})'
+        return f'Point(lat={self.lat}, lon={self.lon})'
 
 
 @dataclass(eq=True)
@@ -133,7 +134,6 @@ class Measurement:
 
     def __hash__(self):
         return hash((self.lat, self.lon, self.timestamp.date(), self.extra['azimuth']))
-
 
 
 @dataclass

@@ -206,8 +206,8 @@ class Grid(EmptyGrid):
         :param point: point within Grid
         :return: value
         """
-        if not (self.northeast.x > point.x> self.southwest.x) or \
-                not (self.northeast.y > point.y > self.southwest.y):
+        if not (self.northeast.x > point.x > self.southwest.x) \
+                or not (self.northeast.y > point.y > self.southwest.y):
             raise ValueError(f"Point {point} is not within a section of Grid {self}")
 
         x_center = min(self.x_coords, key=lambda x: abs(x - point.x))

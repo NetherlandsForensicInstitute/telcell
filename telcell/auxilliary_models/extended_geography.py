@@ -25,7 +25,9 @@ class EmptyDenseCenterGrid(EmptyGrid):
     * The outer diameter ($(diameter - inner diameter) / 2$) should be a multiple of the low resolution
     * All constraints that are placed on a default Grid (see `Grid`)
     """
-    def __init__(self, diameter: int, inner_diameter: int, outer_resolution: int, inner_resolution: int, southwest: GridPoint):
+    def __init__(self, diameter: int, inner_diameter: int,
+                 outer_resolution: int, inner_resolution: int,
+                 southwest: GridPoint):
         """
         :param diameter: Height/width of (outer) values
         :param inner_diameter: height/width of inner values
@@ -158,7 +160,9 @@ class DenseCenterGrid(EmptyDenseCenterGrid):
     >>> _grid_summed = _grid + _grid
 
     """
-    def __init__(self, diameter: int, inner_diameter: int, outer_resolution: int, inner_resolution: int, southwest: GridPoint,
+    def __init__(self, diameter: int, inner_diameter: int,
+                 outer_resolution: int, inner_resolution: int,
+                 southwest: GridPoint,
                  inner_values: np.ndarray, outer_values: np.ndarray):
         """
         :param diameter: Height/width of (outer) values

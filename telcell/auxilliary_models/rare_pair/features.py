@@ -11,6 +11,7 @@ from telcell.data.models import Measurement
 
 PI = tf.constant(pi)
 
+
 def extract_features(grid_coords: tf.Tensor, antenna_coords: tf.Tensor,
                      azimuths: tf.Tensor) \
         -> Tuple[tf.Tensor, tf.Tensor]:
@@ -31,8 +32,8 @@ def extract_features(grid_coords: tf.Tensor, antenna_coords: tf.Tensor,
     distance = round_to_nearest(distance)
 
     # correct angle for azimuth of antenna and take absolute value
-    #TODO floormod should not be needed if database provide only 'valid' azimuths. could be doable
-    # by modelling cell measurements and putting requirements on the azimuth.
+    # TODO: floormod should not be needed if database provide only 'valid' azimuths. could be doable
+    # TODO: by modelling cell measurements and putting requirements on the azimuth.
     angle = tf.math.floormod(abs(angle * 180 / PI - azimuths), 360)
     angle = tf.where(angle > 180, 360 - angle, angle)
 
@@ -83,8 +84,9 @@ def extract_azimuth(measurement: Measurement,
     return tf.convert_to_tensor(np.expand_dims(azimuth, 0), tf.float32)
 
 
-def extract_antenna_coordinates(measurement: Measurement, antennas: Optional[
-    Sequence[Antenna]] = None) -> tf.Tensor:
+def extract_antenna_coordinates(measurement: Measurement,
+                                antennas: Optional[Sequence[Antenna]] = None) \
+        -> tf.Tensor:
     """
     Extract coordinates antenna(s)
 
