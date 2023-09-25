@@ -1,6 +1,6 @@
 import re
 from enum import Enum
-from typing import Optional, Any
+from typing import Optional, Any, Union
 
 
 class Radio(Enum):
@@ -34,7 +34,7 @@ class CellIdentity:
 
     @staticmethod
     def create(*,
-               radio: Optional[Radio | str] = None,
+               radio: Optional[Union[Radio, str]] = None,
                mcc: Optional[int] = None,
                mnc: Optional[int] = None,
                lac: Optional[int] = None,

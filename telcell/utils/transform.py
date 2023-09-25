@@ -1,7 +1,8 @@
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, time
-from itertools import pairwise
 from typing import Iterator, Tuple, Mapping, Any, List
+
+from more_itertools import pairwise
 
 from telcell.data.models import Measurement, Track, MeasurementPair
 from telcell.data.utils import extract_intervals, split_track_by_interval

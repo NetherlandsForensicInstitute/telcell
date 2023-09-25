@@ -89,8 +89,7 @@ class Point:
 
     def __eq__(self, other):
         if isinstance(other, Point):
-            return (self.lat == other.lat) and (self.lon == other.lon) and \
-                   (self.system == other.system)
+            return (self.lat == other.lat) and (self.lon == other.lon)
         else:
             return False
 
@@ -98,7 +97,7 @@ class Point:
         return f'Point(lat={self.lat}, lon={self.lon})'
 
 
-@dataclass(eq=True)
+@dataclass(eq=True, frozen=True)
 class Measurement:
     """
     A single measurement of a device at a certain place and time.
@@ -133,7 +132,8 @@ class Measurement:
         return f"<{self.timestamp}: ({self.lat}, {self.lon})>"
 
     def __hash__(self):
-        return hash((self.lat, self.lon, self.timestamp.date(), self.extra['azimuth']))
+        return hash((self.lat, self.lon, self.timestamp.date(),
+                     *(_extra for _extra in self.extra.values())))
 
 
 @dataclass
