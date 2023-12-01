@@ -1,5 +1,5 @@
 from itertools import groupby
-from typing import Sequence, Mapping, Optional, List, Any, Tuple
+from typing import Sequence, Mapping, Optional, List, Any, Tuple, Callable
 
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
@@ -28,8 +28,10 @@ class RarePairModel(Model):
     """
 
     def __init__(self, coverage_training_data: Sequence[CoverageData], transformer: BaseTransformer, bins: List[Bin],
+                 categorize_measurement_for_rarity: Callable,
                  priors: Mapping, fit_models: bool = True):
         self.bins = bins
+        self.categorize_measurement_for_rarity = categorize_measurement_for_rarity
         self.transformer = transformer
         self.coverage_training_data = self.filter_timediff(coverage_training_data)
         self.fit_models = fit_models
@@ -50,8 +52,8 @@ class RarePairModel(Model):
         if not track_a or not track_b:
             return None, None
         switches = get_switches(track_a, track_b)
-        sorted_pairs = sort_pairs_based_on_rarest_location(switches=switches, history_track_b=kwargs['background_b'],
-                                                           round_lon_lats=False, max_delay=self.max_delay)
+        rarest_pair = sort_pairs_based_on_rarest_location(switches=switches, history_track_b=kwargs['background_b'],
+                            categorize_measurement_for_rarity=self.categorize_measurement_for_rarity, max_delay=self.max_delay)
         if not sorted_pairs:
             return None, None
         _, rarest_pair = sorted_pairs[0]  # we want the pair with the rarest location

@@ -16,6 +16,7 @@ import streamlit as st
 from data_analysis.utils import get_layers, get_tracks_pairs_from_csv, \
     load_measurements_to_df, get_colormap, get_html_color_legend, \
     get_switches_and_rarest_pairs, find_date_range, map_ts_to_day_beginning_at_5am
+from telcell.utils.transform import categorize_measurement_by_coordinates
 
 
 class TrackDashboard:
@@ -28,7 +29,8 @@ class TrackDashboard:
         # read the data
         registrations_df = load_measurements_to_df(self.file_name, map_ts_to_day_beginning_at_5am)
         track_pairs = get_tracks_pairs_from_csv(self.file_name)
-        registration_pairs = get_switches_and_rarest_pairs(track_pairs, self.max_delay)
+        registration_pairs = get_switches_and_rarest_pairs(track_pairs,
+                    categorize_measurement_for_rarity=categorize_measurement_by_coordinates, max_delay=self.max_delay)
 
         # Assign a color to each device/owner combination
         colormap = get_colormap(['tab10', 'Set3', 'Dark2', 'tab20b'])

@@ -1,4 +1,4 @@
-from typing import List, Tuple, Optional, Mapping
+from typing import List, Tuple, Optional, Mapping, Callable
 
 import lir
 import numpy as np
@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 from telcell.data.models import Track
 from telcell.models import Model
 from telcell.utils.transform import get_switches, select_colocated_pairs, generate_all_pairs, \
-    sort_pairs_based_on_rarest_location
+    sort_pairs_based_on_rarest_location, get_pair_with_rarest_measurement_b
 
 
 class MeasurementPairClassifier(Model):
@@ -21,14 +21,15 @@ class MeasurementPairClassifier(Model):
     scores that are provided by the logistic regression.
     """
 
-    def __init__(self, colocated_training_data: List[Track]):
+    def __init__(self, colocated_training_data: List[Track], categorize_measurement_for_rarity: Callable):
         self.training_data = colocated_training_data
         self.colocated_training_pairs = select_colocated_pairs(self.training_data)
+        self.categorize_measurement_for_rarity = categorize_measurement_for_rarity
 
     def predict_lr(self, track_a: Track, track_b: Track, **kwargs) -> Tuple[float, Optional[Mapping]]:
         pairs = get_switches(track_a, track_b)
-        pair = sort_pairs_based_on_rarest_location(switches=pairs, history_track_b=kwargs['background_b'],
-                                                   round_lon_lats=True)[0][1]
+        _, pair = get_pair_with_rarest_measurement_b(switches=pairs, history_track_b=kwargs['background_b'],
+                                categorize_measurement_for_rarity=self.categorize_measurement_for_rarity)
 
         # resulting pairs need not be really dislocated, but simulated
         # dislocation by temporally shifting track a's history towards the
