@@ -1,7 +1,7 @@
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, time
 from itertools import combinations
-from typing import Iterator, Tuple, Mapping, Any, List
+from typing import Iterator, Tuple, Mapping, Any, List, Iterable
 
 from more_itertools import pairwise
 
@@ -192,14 +192,11 @@ def select_colocated_pairs(tracks: List[Track],
             pairs = get_switches(*tracks)
             pairs = filter_delay(pairs, max_delay)
             final_pairs.extend(pairs)
-        else:
-            pass  # nothing to pair for this track
 
     return final_pairs
 
 
-def generate_all_pairs(measurement: Measurement, track: Track) \
-        -> List[MeasurementPair]:
+def generate_all_pairs(measurement: Measurement, track: Iterable[Measurement]) -> List[MeasurementPair]:
     """
     Created all measurement pairs of the specific measurement with every
     measurement of the given track.
