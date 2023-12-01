@@ -12,7 +12,8 @@ from telcell.auxilliary_models.rare_pair.transformers import BaseTransformer
 from telcell.auxilliary_models.rare_pair.utils import Bin
 from telcell.data.models import Track
 from telcell.models import Model
-from telcell.utils.transform import get_switches, sort_pairs_based_on_rarest_location
+from telcell.utils.transform import get_switches, sort_pairs_based_on_rarest_location, \
+    get_pair_with_rarest_measurement_b
 
 
 class RarePairModel(Model):
@@ -52,11 +53,10 @@ class RarePairModel(Model):
         if not track_a or not track_b:
             return None, None
         switches = get_switches(track_a, track_b)
-        rarest_pair = sort_pairs_based_on_rarest_location(switches=switches, history_track_b=kwargs['background_b'],
+        _, rarest_pair = get_pair_with_rarest_measurement_b(switches=switches, history_track_b=kwargs['background_b'],
                             categorize_measurement_for_rarity=self.categorize_measurement_for_rarity, max_delay=self.max_delay)
-        if not sorted_pairs:
+        if rarest_pair is None:
             return None, None
-        _, rarest_pair = sorted_pairs[0]  # we want the pair with the rarest location
 
         h_1 = self.predictor.get_probability_e_h(rarest_pair.measurement_a, rarest_pair.measurement_b,
                                                  delta_t=rarest_pair.time_difference.total_seconds())

@@ -2,7 +2,7 @@ import warnings
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, time
 from itertools import combinations
-from typing import Iterator, Tuple, Mapping, Any, List, Callable
+from typing import Iterator, Tuple, Mapping, Any, List, Callable, Optional
 
 from more_itertools import pairwise
 
@@ -130,7 +130,7 @@ def get_pair_with_rarest_measurement_b(
         history_track_b: Track,
         categorize_measurement_for_rarity: Callable,
         max_delay: int = None
-) -> Tuple[int, MeasurementPair]:
+) -> Tuple[Optional[int], Optional[MeasurementPair]]:
     """
     Pairs are first filtered on allowed time interval of the two registrations
     of a single pair. Then, sort pairs based on the rarity of the measurement
@@ -150,8 +150,7 @@ def get_pair_with_rarest_measurement_b(
     """
     sorted_pairs = _sort_pairs_based_on_rarest_location(switches, history_track_b, categorize_measurement_for_rarity,
                                                         max_delay)
-    assert len(sorted_pairs) > 0
-    return sorted_pairs[0]
+    return sorted_pairs[0] if len(sorted_pairs) > 0 else None, None
 
 
 def _sort_pairs_based_on_rarest_location(
