@@ -186,7 +186,8 @@ def select_colocated_pairs(tracks: List[Track],
     final_pairs = []
     for tracks in tracks_per_owner.values():
         if len(tracks) > 2:
-            raise NotImplementedError(f"pairing of more than two tracks for owner {tracks[0].owner} is currently not supported")
+            raise NotImplementedError(f"pairing of more than two tracks for owner {tracks[0].owner} is currently not"
+                                      "supported")
         elif len(tracks) > 1:
             pairs = get_switches(*tracks)
             pairs = filter_delay(pairs, max_delay)
