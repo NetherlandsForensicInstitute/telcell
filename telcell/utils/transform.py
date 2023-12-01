@@ -1,3 +1,4 @@
+import warnings
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, time
 from itertools import combinations
@@ -120,6 +121,7 @@ def categorize_measurement_by_coordinates(measurement: Measurement) -> Any:
 
 
 def categorize_measurement_by_rounded_coordinates(measurement: Measurement) -> Any:
+    warnings.warn("rounded coordinates imply odd shaped regions and should not be used for categorization")
     return f'{measurement.lon:.2f}_{measurement.lat:.2f}'
 
 
