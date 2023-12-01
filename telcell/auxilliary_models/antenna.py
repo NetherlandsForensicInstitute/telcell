@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional, Tuple
 
 from telcell.auxilliary_models.geography import GridPoint
-from telcell.auxilliary_models.cell_identity import CellIdentity
+from telcell.cell_identity import CellIdentity
 
 LOG = logging.getLogger(__name__)
 

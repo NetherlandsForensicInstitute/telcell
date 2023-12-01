@@ -2,7 +2,7 @@ import random
 from collections import Counter
 from datetime import datetime, time, timedelta
 from itertools import chain
-from typing import Tuple, List, Mapping, Any, Optional
+from typing import Tuple, List, Mapping, Any, Optional, Callable
 
 import matplotlib
 import pandas as pd
@@ -140,7 +140,7 @@ def calculate_distance_lat_lon(latlon_a: Tuple[float, float],
     return distance
 
 
-def map_ts_to_day(timestamp: pd.Timestamp | str) -> datetime.date:
+def map_ts_to_day_beginning_at_5am(timestamp: pd.Timestamp | str) -> datetime.date:
     """
     Instead of considering a 'day' as ranging from 0.00-23.59, we will now
     view it as 5.00-4.59. This function is to map a timestamp to a day, since
@@ -174,15 +174,16 @@ def find_date_range(registrations_df: pd.DataFrame) -> List[datetime.date]:
 
 # functions for tracks and pairs dashboard
 @st.cache_data
-def load_measurements_to_df(file_name: str) -> pd.DataFrame:
+def load_measurements_to_df(file_name: str, map_ts_to_interval_id: Callable) -> pd.DataFrame:
     """
     Load the measurements.csv data and format the columns.
     :param file_name: file to load measurements from.
+    :param map_ts_to_interval: function which maps a timestamp to an interval, returning an `int` which identifies the interval
     :return: the measurements in a dataframe.
     """
     df = pd.read_csv(file_name)
     df = df.rename(columns={'cellinfo.wgs84.lat': 'lat', 'cellinfo.wgs84.lon': 'lon'})
-    df['day'] = df['timestamp'].apply(map_ts_to_day)
+    df['day'] = df['timestamp'].apply(map_ts_to_interval_id)
     df['timestamp'] = df['timestamp'].apply(lambda x: pd.to_datetime(x, utc=True))
     df['time'] = df['timestamp'].apply(lambda x: x.time())
     df.drop_duplicates(subset=['device', 'owner', 'timestamp', 'lat', 'lon'], inplace=True, ignore_index=True)

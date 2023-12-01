@@ -93,7 +93,7 @@ def get_switches(track_a: Track, track_b: Track) -> List[MeasurementPair]:
     if track_a.device == track_b.device and track_a.owner == track_b.owner:
         raise ValueError('No switches exist if the tracks are from the same device')
     combined_tracks = [(m, 'a') for m in track_a.measurements] + [(m, 'b') for m in track_b.measurements]
-    combined_tracks = sorted(combined_tracks, key=lambda x: x[0].timestamp)
+    combined_tracks = sorted(combined_tracks, key=lambda x: (x[0].timestamp, x[1]))
     paired_measurements = []
     for (measurement_first, origin_first), (measurement_second, origin_second) in pairwise(combined_tracks):
         # check this pair is from the two different tracks
@@ -197,10 +197,15 @@ def select_colocated_pairs(tracks: List[Track],
 
     final_pairs = []
     for tracks in tracks_per_owner.values():
-        if len(tracks) == 2:
+        if len(tracks) > 2:
+            raise NotImplementedError(f"pairing of more than two tracks for owner {tracks[0].owner} is currently not supported")
+        elif len(tracks) > 1:
             pairs = get_switches(*tracks)
             pairs = filter_delay(pairs, max_delay)
             final_pairs.extend(pairs)
+        else:
+            pass  # nothing to pair for this track
+
     return final_pairs
 
 
