@@ -12,8 +12,7 @@ from telcell.auxilliary_models.rare_pair.transformers import BaseTransformer
 from telcell.auxilliary_models.rare_pair.utils import Bin
 from telcell.data.models import Track
 from telcell.models import Model
-from telcell.utils.transform import get_switches, sort_pairs_based_on_rarest_location, \
-    get_pair_with_rarest_measurement_b
+from telcell.utils.transform import get_switches, get_pair_with_rarest_measurement_b
 
 
 class RarePairModel(Model):
@@ -54,7 +53,9 @@ class RarePairModel(Model):
             return None, None
         switches = get_switches(track_a, track_b)
         _, rarest_pair = get_pair_with_rarest_measurement_b(switches=switches, history_track_b=kwargs['background_b'],
-                            categorize_measurement_for_rarity=self.categorize_measurement_for_rarity, max_delay=self.max_delay)
+                                            categorize_measurement_for_rarity=self.categorize_measurement_for_rarity,
+                                            max_delay=self.max_delay)
+
         if rarest_pair is None:
             return None, None
 
