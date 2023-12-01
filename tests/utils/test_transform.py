@@ -50,11 +50,7 @@ def test_create_track_pairs(test_data):
         Track(owner='C', device='1', measurements=[]),
     ]
     pairs = list(create_track_pairs(tracks))
-    assert len([pair for pair in pairs if is_colocated(*pair)]) == 4 # same source: 1 A and 3 B
-    assert len(pairs) == 4 + 7 # diff source: A1-B2/B3 A2-B1/B3/C1 B2-C1 B3-C1
-
-    pairs = list(create_track_pairs(tracks, all_different_source=True))
-    assert len([pair for pair in pairs if is_colocated(*pair)]) == 4 # same source: 1 A and 3 B
+    assert len([pair for pair in pairs if is_colocated(*pair)]) == 4  # same source: 1 A and 3 B
     assert len(pairs) == 4 + 11
 
 

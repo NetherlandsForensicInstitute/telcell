@@ -199,7 +199,7 @@ def get_tracks_pairs_from_csv(file_name: str) -> List[Tuple[Track, Track, Mappin
     :return: the paired tracks from the file.
     """
     tracks = parse_measurements_csv(file_name)
-    track_pairs = list(slice_track_pairs_to_intervals(create_track_pairs(tracks, all_different_source=True), interval_length_h=24))
+    track_pairs = list(slice_track_pairs_to_intervals(create_track_pairs(tracks), interval_length_h=24))
     return track_pairs
 
 

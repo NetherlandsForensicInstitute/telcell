@@ -1,5 +1,6 @@
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, time
+from itertools import combinations
 from typing import Iterator, Tuple, Mapping, Any, List
 
 from more_itertools import pairwise
@@ -8,25 +9,12 @@ from telcell.data.models import Measurement, Track, MeasurementPair
 from telcell.data.utils import extract_intervals, split_track_by_interval
 
 
-def create_track_pairs(tracks: List[Track],
-                       all_different_source: bool = False) \
+def create_track_pairs(tracks: List[Track]) \
         -> Iterator[Tuple[Track, Track]]:
     """
-    Takes a set of tracks and returns track pairs:
-     - all same source (i.e. same 'owner' attribute) track pairs
-     - if all_different_source = True: all different source track pairs ()
-     - if all_different_source = False: all different source where the name is different. This makes sense
-     if name can be 'personal' and 'burner' for example.
+    Takes a set of tracks and returns track pairs
     """
-    for i, track_a in enumerate(tracks):
-        for track_b in tracks[i + 1:]:
-            if is_colocated(track_a, track_b):
-                yield track_a, track_b
-            else:
-                if all_different_source:
-                    yield track_a, track_b
-                elif track_a.device != track_b.device:
-                    yield track_a, track_b
+    return combinations(tracks, 2)
 
 
 def slice_track_pairs_to_intervals(track_pairs: Iterator[Tuple[Track, Track]],
