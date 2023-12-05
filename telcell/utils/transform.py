@@ -1,7 +1,6 @@
-import itertools
-from collections import Counter, defaultdict
+from collections import Counter
 from datetime import datetime, timedelta, time
-from itertools import combinations
+from itertools import chain, combinations
 from typing import Iterator, Tuple, Mapping, Any, List, Iterable
 
 from more_itertools import pairwise
@@ -181,7 +180,7 @@ def select_colocated_pairs(tracks: List[Track],
     :return: A filtered list with all colocated paired measurements.
     """
     track_pairs = create_track_pairs(tracks)
-    track_pairs_colocated = itertools.chain.from_iterable(
+    track_pairs_colocated = chain.from_iterable(
         [get_switches(track_a, track_b) for track_a, track_b in track_pairs if
          is_colocated(track_a, track_b)])
     return filter_delay(track_pairs_colocated, max_delay)
