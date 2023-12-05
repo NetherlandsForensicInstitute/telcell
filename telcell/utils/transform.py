@@ -1,3 +1,4 @@
+import itertools
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, time
 from itertools import combinations
@@ -179,21 +180,11 @@ def select_colocated_pairs(tracks: List[Track],
     :param max_delay: the maximum amount of delay that is allowed.
     :return: A filtered list with all colocated paired measurements.
     """
-    tracks_per_owner = defaultdict(list)
-    for track in tracks:
-        tracks_per_owner[track.owner].append(track)
-
-    final_pairs = []
-    for tracks in tracks_per_owner.values():
-        if len(tracks) > 2:
-            raise NotImplementedError(f"pairing of more than two tracks for owner {tracks[0].owner} is currently not"
-                                      "supported")
-        elif len(tracks) > 1:
-            pairs = get_switches(*tracks)
-            pairs = filter_delay(pairs, max_delay)
-            final_pairs.extend(pairs)
-
-    return final_pairs
+    track_pairs = create_track_pairs(tracks)
+    track_pairs_colocated = itertools.chain.from_iterable(
+        [get_switches(track_a, track_b) for track_a, track_b in track_pairs if
+         is_colocated(track_a, track_b)])
+    return filter_delay(track_pairs_colocated, max_delay)
 
 
 def generate_all_pairs(measurement: Measurement, track: Iterable[Measurement]) -> List[MeasurementPair]:
