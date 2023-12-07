@@ -4,7 +4,8 @@ from functools import partial
 
 from telcell.data.models import Measurement, Track, Point
 from telcell.utils.transform import get_switches, create_track_pairs, \
-    is_colocated, sort_pairs_based_on_rarest_location, MeasurementPair
+    is_colocated, MeasurementPair, categorize_measurement_by_coordinates, _sort_pairs_based_on_rarest_location, \
+    categorize_measurement_by_rounded_coordinates
 
 
 def test_get_switches(test_data_3days):
@@ -69,10 +70,10 @@ def test_sort_by_time_diff_for_same_location_rarity(max_delay):
     ]
     background_b = Track('', '',
                          [s.measurement_b for s in switches_one_location])
-    sorted_pairs = sort_pairs_based_on_rarest_location(switches_one_location,
+    sorted_pairs = _sort_pairs_based_on_rarest_location(switches_one_location,
                                                        background_b,
-                                                       False,
-                                                       max_delay)
+                                                       categorize_measurement_for_rarity=categorize_measurement_by_coordinates,
+                                                       max_delay=max_delay)
 
     # manually check correct timestamps of measurement_b
     correct_timestamps_b = [1, 4, 4, 5, 8, 8, 9, 21, 24, 24]
@@ -102,10 +103,8 @@ def test_sort_by_location_rarity_for_same_time_diff(max_delay):
     ]
     background_b = Track('', '',
                          [s.measurement_b for s in switches_one_time_diff])
-    sorted_pairs = sort_pairs_based_on_rarest_location(switches_one_time_diff,
-                                                       background_b,
-                                                       False,
-                                                       max_delay)
+    sorted_pairs = _sort_pairs_based_on_rarest_location(switches_one_time_diff, background_b,
+                    categorize_measurement_for_rarity=categorize_measurement_by_coordinates, max_delay=max_delay)
 
     # manually check correct location counts and longitude of measurement_b
     correct_counts_lon_b = [(1, 3.0), (1, 4.0), (3, 2.0), (3, 2.0), (3, 2.0),
@@ -122,10 +121,8 @@ def test_sort_by_location_rarity_for_same_time_diff(max_delay):
 
     background_a = Track('', '',
                          [s.measurement_a for s in switches_one_time_diff])
-    sorted_pairs = sort_pairs_based_on_rarest_location(switches_one_time_diff,
-                                                       background_a,
-                                                       False,
-                                                       max_delay)
+    sorted_pairs = _sort_pairs_based_on_rarest_location(switches_one_time_diff, background_a,
+                   categorize_measurement_for_rarity=categorize_measurement_by_coordinates, max_delay=max_delay)
     # with a wrong background that has no intersection with 'track_b',
     # the counts should be zero
     assert all(count == 0 for count, _ in sorted_pairs)
@@ -144,10 +141,9 @@ def test_sort_outside_bin(max_delay):
         for _ in range(10)
     ]
     background_b = Track('', '', [s.measurement_b for s in switches])
-    sorted_pairs = sort_pairs_based_on_rarest_location(switches,
-                                                       background_b,
-                                                       False,
-                                                       max_delay)
+    sorted_pairs = _sort_pairs_based_on_rarest_location(switches, background_b,
+                            categorize_measurement_for_rarity=categorize_measurement_by_coordinates,
+                            max_delay=max_delay)
 
     assert len(sorted_pairs) == 5  # some pairs with too large time difference are filtered
     assert max(s[1].time_difference for s in sorted_pairs).seconds == 120
@@ -165,17 +161,15 @@ def test_round_lat_lons(max_delay):
         for i in range(10)
     ]
     background_b = Track('', '', [s.measurement_b for s in switches])
-    sorted_pairs = sort_pairs_based_on_rarest_location(switches,
-                                                       background_b,
-                                                       False,
-                                                       max_delay)
+    sorted_pairs = _sort_pairs_based_on_rarest_location(switches, background_b,
+                    categorize_measurement_for_rarity=categorize_measurement_by_coordinates,
+                    max_delay=max_delay)
     # without rounding, we have unique locations
     assert all(count == 1 for count, _ in sorted_pairs)
 
-    sorted_pairs = sort_pairs_based_on_rarest_location(switches,
-                                                       background_b,
-                                                       True,
-                                                       max_delay)
+    sorted_pairs = _sort_pairs_based_on_rarest_location(switches, background_b,
+                    categorize_measurement_for_rarity=categorize_measurement_by_rounded_coordinates,
+                    max_delay=max_delay)
     # with rounding, the locations are identical
     assert all(count == 10 for count, _ in sorted_pairs)
 

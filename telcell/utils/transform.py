@@ -1,6 +1,8 @@
+import warnings
 from collections import Counter
 from datetime import datetime, timedelta, time
 from itertools import chain, combinations
+from typing import Callable, Optional
 from typing import Iterator, Tuple, Mapping, Any, List, Iterable
 
 from more_itertools import pairwise
@@ -115,53 +117,80 @@ def filter_delay(paired_measurements: List[MeasurementPair],
             if x.time_difference <= max_delay]
 
 
-def sort_pairs_based_on_rarest_location(
+def categorize_measurement_by_coordinates(measurement: Measurement) -> Any:
+    return f'{measurement.lon}_{measurement.lat}'
+
+
+def categorize_measurement_by_rounded_coordinates(measurement: Measurement) -> Any:
+    warnings.warn("rounded coordinates imply odd shaped regions and should not be used for categorization")
+    return f'{measurement.lon:.2f}_{measurement.lat:.2f}'
+
+
+def get_pair_with_rarest_measurement_b(
         switches: List[MeasurementPair],
         history_track_b: Track,
-        round_lon_lats: bool,
+        categorize_measurement_for_rarity: Callable,
+        max_delay: int = None
+) -> Tuple[Optional[int], Optional[MeasurementPair]]:
+    """
+    Pairs are first filtered on allowed time interval of the two registrations
+    of a single pair. Then, sort pairs based on the rarity of the measurement
+    with respect to `categorize_measurements` and secondarily by time
+    difference of the pair. The first pair is returned.
+
+    The returned value is a tuple of the category count and the corresponding measurement pair. The category count is
+    the number of occurrences of the category from measurement_b in the track history that is provided.
+
+    :param switches: A list with all paired measurements to consider.
+    :param history_track_b: the history of track_b to find the rarity of locations.
+    :param categorize_measurement_for_rarity: callable which returns a category specification
+        of a measurement in order to determine its rarity
+    :param max_delay: maximum allowed time difference (seconds) in a pair.
+                      Default: no max_delay, show all possible pairs.
+    :return: A tuple of the category count and corresponding measurement pair.
+    """
+    sorted_pairs = _sort_pairs_based_on_rarest_location(switches, history_track_b, categorize_measurement_for_rarity,
+                                                        max_delay)
+    return sorted_pairs[0] if len(sorted_pairs) > 0 else (None, None)
+
+
+def _sort_pairs_based_on_rarest_location(
+        switches: List[MeasurementPair],
+        history_track_b: Track,
+        categorize_measurement_for_rarity: Callable,
         max_delay: int = None
 ) -> List[Tuple[int, MeasurementPair]]:
     """
     Pairs are first filtered on allowed time interval of the two registrations
-    of a single pair. Then, sort pairs based on the rarest location of the
-    track history first and secondly by time difference of the pair.
+    of a single pair. Then, sort pairs based on the rarity of the measurement
+    with respect to `categorize_measurements` and secondarily by time
+    difference of the pair. The first pair is returned, or None if `switches`
+    is an empty list.
 
     :param switches: A list with all paired measurements to consider.
     :param history_track_b: the history of track_b to find the rarity of locations.
-    :param round_lon_lats: boolean indicating whether to round the lon/lats
-            to two decimals.
+    :param categorize_measurement_for_rarity: callable which returns a category specification
+        of a measurement in order to determine its rarity
     :param max_delay: maximum allowed time difference (seconds) in a pair.
                       Default: no max_delay, show all possible pairs.
     :return: The location counts and measurement pairs that are sorted on the
             rarest location based on the history and time difference. The
             location count is the number of occurrences of the coordinates from
             measurement_b in the track history that is provided.
-
-    TODO There is a problem with testdata, because those are almost continuous
-    lat/lon data, making rarity of locations not as straightforward.
-    Pseudo-solution for now: round lon/lats to two decimals and determine
-    rarity of those.
-    This should not be used if locations are actual cell-ids
     """
-
-    def location_key(measurement):
-        if round_lon_lats:
-            return f'{measurement.lon:.2f}_{measurement.lat:.2f}'
-        else:
-            return f'{measurement.lon}_{measurement.lat}'
 
     def sort_key(element):
         rarity, pair = element
         return rarity, pair.time_difference
 
     location_counts = Counter(
-        location_key(m) for m in history_track_b.measurements)
+        categorize_measurement_for_rarity(m) for m in history_track_b.measurements)
 
     if max_delay:
         switches = filter_delay(switches, timedelta(seconds=max_delay))
 
     sorted_pairs = sorted(
-        ((location_counts.get(location_key(pair.measurement_b), 0), pair) for
+        ((location_counts.get(categorize_measurement_for_rarity(pair.measurement_b), 0), pair) for
          pair in switches), key=sort_key)
 
     return sorted_pairs

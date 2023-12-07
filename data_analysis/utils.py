@@ -17,8 +17,8 @@ from pyproj import Transformer
 from telcell.data.models import Track
 from telcell.data.parsers import parse_measurements_csv
 from telcell.utils.transform import get_switches, \
-    sort_pairs_based_on_rarest_location, slice_track_pairs_to_intervals, \
-    create_track_pairs
+    slice_track_pairs_to_intervals, \
+    create_track_pairs, get_pair_with_rarest_measurement_b
 
 rd_to_wgs84 = Transformer.from_crs(crs_from="EPSG:28992", crs_to="EPSG:4326")
 GEOD = pyproj.Geod(ellps='WGS84')
@@ -204,12 +204,14 @@ def get_tracks_pairs_from_csv(file_name: str) -> List[Tuple[Track, Track, Mappin
 
 
 def get_switches_and_rarest_pairs(data: List[Tuple[Track, Track, Mapping[str, Any]]],
+                                  categorize_measurement_for_rarity: Callable,
                                   max_delay: int = None) -> pd.DataFrame:
     """
     Load all registration pairs from pairs of tracks, store them in a
     dataframe. We also indicate for each day what pair is selected based on
     rarest location and maximum time difference (if any).
     :param data: the paired tracks for each time interval.
+    :param categorize_measurement_for_rarity: a categorization function of measurements to be used to determine rarity
     :param max_delay: maximum time difference (seconds) of a registration pair.
                       Default: no max_delay, all pairs are returned.
     :return: a dataframe of paired measurements.
@@ -217,15 +219,13 @@ def get_switches_and_rarest_pairs(data: List[Tuple[Track, Track, Mapping[str, An
     df = []
     for track_a, track_b, kwargs in tqdm(data):
         switches = get_switches(track_a, track_b)
-        sorted_pairs_by_rarity_b = sort_pairs_based_on_rarest_location(
+        rarity, rarest_pair = get_pair_with_rarest_measurement_b(
             switches=switches,
             history_track_b=kwargs['background_b'],
-            round_lon_lats=False,
+            categorize_measurement_for_rarity=categorize_measurement_for_rarity,
             max_delay=max_delay)
 
-        sorted_pairs_by_rarity_b = {pair: count for count, pair in sorted_pairs_by_rarity_b}
         # we want the pair with rarest location, since the dict is sorted, we take the first.
-        rarest_pair = list(sorted_pairs_by_rarity_b.keys())[0] if sorted_pairs_by_rarity_b else None
         device_owner_a, device_owner_b = track_a.device + "_" + track_a.owner, track_b.device + "_" + track_b.owner
 
         df.extend([
@@ -233,7 +233,7 @@ def get_switches_and_rarest_pairs(data: List[Tuple[Track, Track, Mapping[str, An
              *pair.measurement_a.latlon, pair.measurement_a.timestamp, device_owner_a,
              *pair.measurement_b.latlon, pair.measurement_b.timestamp, device_owner_b,
              pair.distance, pair.time_difference.seconds,
-             pair == rarest_pair, sorted_pairs_by_rarity_b.get(pair)]
+             pair == rarest_pair, rarity, ]
             for pair in switches
         ])
 
