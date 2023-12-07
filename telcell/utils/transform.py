@@ -167,8 +167,8 @@ def sort_pairs_based_on_rarest_location(
     return sorted_pairs
 
 
-def select_colocated_pairs(tracks: List[Track],
-                           max_delay: timedelta = timedelta(seconds=120)) \
+def get_colocation_switches(tracks: List[Track],
+                            max_delay: timedelta = timedelta(seconds=120)) \
         -> List[MeasurementPair]:
     """
     For a list of tracks, find pairs of measurements that are colocated, i.e.
