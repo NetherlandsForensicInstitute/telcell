@@ -52,9 +52,10 @@ class RarePairModel(Model):
         if not track_a or not track_b:
             return None, None
         switches = get_switches(track_a, track_b)
-        _, rarest_pair = get_pair_with_rarest_measurement_b(switches=switches, history_track_b=kwargs['background_b'],
-                                            categorize_measurement_for_rarity=self.categorize_measurement_for_rarity,
-                                            max_delay=self.max_delay)
+        _, rarest_pair = get_pair_with_rarest_measurement_b(
+            switches=switches, history_track_b=kwargs['background_b'],
+            categorize_measurement_for_rarity=self.categorize_measurement_for_rarity,
+            max_delay=self.max_delay)
 
         if rarest_pair is None:
             return None, None

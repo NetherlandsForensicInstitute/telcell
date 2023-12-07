@@ -28,8 +28,9 @@ class MeasurementPairClassifier(Model):
 
     def predict_lr(self, track_a: Track, track_b: Track, **kwargs) -> Tuple[float, Optional[Mapping]]:
         pairs = get_switches(track_a, track_b)
-        _, pair = get_pair_with_rarest_measurement_b(switches=pairs, history_track_b=kwargs['background_b'],
-                                        categorize_measurement_for_rarity=self.categorize_measurement_for_rarity)
+        _, pair = get_pair_with_rarest_measurement_b(
+            switches=pairs, history_track_b=kwargs['background_b'],
+            categorize_measurement_for_rarity=self.categorize_measurement_for_rarity)
 
         # resulting pairs need not be really dislocated, but simulated
         # dislocation by temporally shifting track a's history towards the
