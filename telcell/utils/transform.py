@@ -137,20 +137,20 @@ def get_pair_with_rarest_measurement_b(
     with respect to `categorize_measurements` and secondarily by time
     difference of the pair. The first pair is returned.
 
+    The returned value is a tuple of the category count and the corresponding measurement pair. The category count is
+    the number of occurrences of the category from measurement_b in the track history that is provided.
+
     :param switches: A list with all paired measurements to consider.
     :param history_track_b: the history of track_b to find the rarity of locations.
     :param categorize_measurement_for_rarity: callable which returns a category specification
         of a measurement in order to determine its rarity
     :param max_delay: maximum allowed time difference (seconds) in a pair.
                       Default: no max_delay, show all possible pairs.
-    :return: The category counts and measurement pairs that are sorted on the
-            rarest location based on the history and time difference. The
-            category count is the number of occurrences of the category from
-            measurement_b in the track history that is provided.
+    :return: A tuple of the category count and corresponding measurement pair.
     """
     sorted_pairs = _sort_pairs_based_on_rarest_location(switches, history_track_b, categorize_measurement_for_rarity,
                                                         max_delay)
-    return sorted_pairs[0] if len(sorted_pairs) > 0 else None, None
+    return sorted_pairs[0] if len(sorted_pairs) > 0 else (None, None)
 
 
 def _sort_pairs_based_on_rarest_location(
