@@ -176,11 +176,7 @@ class MeasurementPair:
     def distance(self):
         """Calculate the distance (in meters) between the two measurements of
         the pair."""
-        _, _, distance = GEOD_WGS84.inv(self.measurement_a.lon,
-                                        self.measurement_a.lat,
-                                        self.measurement_b.lon,
-                                        self.measurement_b.lat)
-        return distance
+        return self.measurement_a.coords.distance(self.measurement_b.coords)
 
     def __str__(self):
         return f"<{self.measurement_a}, ({self.measurement_b})>"

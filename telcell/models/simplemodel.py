@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 
 from telcell.data.models import Track
 from telcell.models import Model
-from telcell.utils.transform import get_switches, select_colocated_pairs, generate_all_pairs, \
+from telcell.utils.transform import get_switches, get_colocation_switches, generate_all_pairs, \
     get_pair_with_rarest_measurement_b
 
 
@@ -23,7 +23,7 @@ class MeasurementPairClassifier(Model):
 
     def __init__(self, colocated_training_data: List[Track], categorize_measurement_for_rarity: Callable):
         self.training_data = colocated_training_data
-        self.colocated_training_pairs = select_colocated_pairs(self.training_data)
+        self.colocated_training_pairs = get_colocation_switches(self.training_data)
         self.categorize_measurement_for_rarity = categorize_measurement_for_rarity
 
     def predict_lr(self, track_a: Track, track_b: Track, **kwargs) -> Tuple[float, Optional[Mapping]]:

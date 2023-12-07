@@ -94,10 +94,8 @@ def validate_classification_coverage_model(model: RarePairModel, priors, out_fol
     """
     Runs the validation script for the classification coverage models.
 
-    The validation plan is described on: https://confluence.dev.holmes.nl/display/FBDA/Validatieplan
-
     Output:
-        - Calibration curve (https://scikit-learn.org/stable/modules/calibration.html#calibration)  are made and saved
+        - Calibration curve (https://scikit-learn.org/stable/modules/calibration.html#calibration) are made and saved
             for each bin
         - Predicted probability distributions for each bin
         - Odds distributions for each bin
