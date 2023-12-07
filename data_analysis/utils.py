@@ -140,18 +140,20 @@ def calculate_distance_lat_lon(latlon_a: Tuple[float, float],
     return distance
 
 
-def map_ts_to_day_beginning_at_5am(timestamp: pd.Timestamp | str) -> datetime.date:
+def map_ts_to_day_beginning(timestamp: pd.Timestamp | str, day_start: 5, interval_length: 24) -> datetime.date:
     """
     Instead of considering a 'day' as ranging from 0.00-23.59, we will now
-    view it as 5.00-4.59. This function is to map a timestamp to a day, since
-    we cannot do "timestamp.date()" anymore.
+    view it as starting at 'day_start'. This function is to map a timestamp to
+    a day, since we cannot do "timestamp.date()" anymore.
     :param timestamp: an object containing date and time information.
+    :param day_start: hour at which the day starts
+    :param interval_length: length of the interval ('day')
     :return: the day (from 5.00AM to 4.59AM) to which the timestamp is mapped.
     """
     if isinstance(timestamp, str):
         timestamp = pd.to_datetime(timestamp)
-    if timestamp.time() < time(5):
-        return timestamp.date() - timedelta(days=1)
+    if timestamp.time() < time(day_start):
+        return timestamp.date() - timedelta(days=1 + interval_length//24)
     else:
         return timestamp.date()
 
@@ -172,18 +174,22 @@ def find_date_range(registrations_df: pd.DataFrame) -> List[datetime.date]:
                   pd.date_range(min_date, max_date)]
     return date_range
 
+
 # functions for tracks and pairs dashboard
 @st.cache_data
-def load_measurements_to_df(file_name: str, map_ts_to_interval_id: Callable) -> pd.DataFrame:
+def load_measurements_to_df(file_name: str, day_start: int = 5, interval_length_h: int = 24) -> pd.DataFrame:
     """
     Load the measurements.csv data and format the columns.
     :param file_name: file to load measurements from.
-    :param map_ts_to_interval: function which maps a timestamp to an interval, returning an `int` which identifies the interval
+    :param day_start: start of the day
+    :param interval_length_h: length of the interval in hours
     :return: the measurements in a dataframe.
     """
     df = pd.read_csv(file_name)
     df = df.rename(columns={'cellinfo.wgs84.lat': 'lat', 'cellinfo.wgs84.lon': 'lon'})
-    df['day'] = df['timestamp'].apply(map_ts_to_interval_id)
+    df['day'] = df['timestamp'].apply(lambda x: map_ts_to_day_beginning(x,
+                                                                        day_start=day_start,
+                                                                        interval_length=interval_length_h))
     df['timestamp'] = df['timestamp'].apply(lambda x: pd.to_datetime(x, utc=True))
     df['time'] = df['timestamp'].apply(lambda x: x.time())
     df.drop_duplicates(subset=['device', 'owner', 'timestamp', 'lat', 'lon'], inplace=True, ignore_index=True)
@@ -199,7 +205,7 @@ def get_tracks_pairs_from_csv(file_name: str) -> List[Tuple[Track, Track, Mappin
     :return: the paired tracks from the file.
     """
     tracks = parse_measurements_csv(file_name)
-    track_pairs = list(slice_track_pairs_to_intervals(create_track_pairs(tracks), interval_length_h=24))
+    track_pairs = list(slice_track_pairs_to_intervals(create_track_pairs(tracks)))
     return track_pairs
 
 
@@ -313,11 +319,11 @@ def get_layers(data: pd.DataFrame, chosen_pair: Optional[pd.DataFrame],
     data = prepare_data_for_layers(data)
     # Scatter points
     layers = [pdk.Layer('ScatterplotLayer', data=data, stroked=True,
-                            getLineWidth=10,
-                            lineWidthMaxPixels=1, get_line_color=[0, 0, 0],
-                            get_position=['lon', 'lat'],
-                            get_color='color', radius_min_pixels=8,
-                            radius_max_pixels=18)]
+                        getLineWidth=10,
+                        lineWidthMaxPixels=1, get_line_color=[0, 0, 0],
+                        get_position=['lon', 'lat'],
+                        get_color='color', radius_min_pixels=8,
+                        radius_max_pixels=18)]
     # Timestamps
     if show_timestamps:
         layers.append(pdk.Layer(type="TextLayer", data=data, pickable=True,

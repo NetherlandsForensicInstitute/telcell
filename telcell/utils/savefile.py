@@ -81,7 +81,7 @@ def write_lrs(lrs: Sequence[Optional[float]], output_dir: pathlib.Path,
     assert len(track_pairs) == len(
         lrs), f'Assuming we have information on all track pairs, ' \
               f'but there are {len(lrs)} lrs and {len(track_pairs)} pairs'
-    with (open(os.path.join(output_dir, 'lrs_per_track_pair.csv'), 'w', newline='') as file):
+    with open(os.path.join(output_dir, 'lrs_per_track_pair.csv'), 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['lr', 'track_a_owner', 'track_a_device', 'track_b_owner',
                          'track_b_device', 'date', 'track_a_timestamp', 'track_a_antenna_id',
