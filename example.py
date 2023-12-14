@@ -19,7 +19,8 @@ def main():
     path = Path(__file__).parent / 'tests' / 'testdata.csv'
     tracks = parse_measurements_csv(path)
 
-    # Create pairs of tracks, where the both are sliced per day, and both backgrounds are return in a mapping
+    # Create pairs of tracks, where the both are sliced per `interval_length` (default 24 hours), starting at
+    # `interval_start` (default 5 am).
     data = list(slice_track_pairs_to_intervals(create_track_pairs(tracks)))
 
     # Specify the models that we want to evaluate.

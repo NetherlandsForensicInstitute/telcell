@@ -20,13 +20,15 @@ def create_track_pairs(tracks: List[Track]) \
 
 
 def slice_track_pairs_to_intervals(track_pairs: Iterator[Tuple[Track, Track]],
+                                   interval_start: int = 5,
                                    interval_length_h: int = 1) \
         -> Iterator[Tuple[Track, Track, Mapping[str, Any]]]:
     """
-    Takes a set of pairs of tracks `(track_a,
-    track_b)` and splits them into slices of length interval_length_h hours. The first
-    slice starts on 5 am before the first data point. The function yields a 3-tuple
-    for each such slice that contains the following:
+    Takes a set of pairs of tracks `(track_a, track_b)` and splits them into
+    slices of length interval_length_h hours. The first slice starts on the
+    hour 'interval_start' before the first data point. The function yields a 3-tuple
+    for each such slice of length `interval_length_h` (hours) that contains the
+    following:
         - A `Track` consisting of the `track_a` measurements for that interval;
         - A `Track` consisting of the `track_b` measurements for that interval;
         - A mapping with two `Track`s containing all other measurements ("background_a"
@@ -34,12 +36,12 @@ def slice_track_pairs_to_intervals(track_pairs: Iterator[Tuple[Track, Track]],
     """
 
     for track_a, track_b in track_pairs:
-        # For our `start` we use 5:00 AM on the day before the start of our
-        # measurements.
+        # For our `start` we use interval_start on the 1+interval_length_h//24 days
+        # before the start of our measurements.
         earliest = next(iter(track_a)).timestamp
         start = datetime.combine(
-            earliest.date() - timedelta(days=1),
-            time(5, tzinfo=earliest.tzinfo),
+            earliest.date() - timedelta(days=1+interval_length_h//24),
+            time(interval_start, tzinfo=earliest.tzinfo),
         )
 
         # Find all intervals of an hour represented in the data.
