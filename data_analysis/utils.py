@@ -140,7 +140,7 @@ def calculate_distance_lat_lon(latlon_a: Tuple[float, float],
     return distance
 
 
-def map_ts_to_interval_start(timestamp: pd.Timestamp | str, interval_start: 5, interval_length_h: 24) -> datetime.date:
+def map_ts_to_interval_start(timestamp: pd.Timestamp | str, interval_start: int = 5, interval_length_h: int = 24) -> datetime.date:
     """
     Instead of considering a 'day' as ranging from 0.00-23.59, we will now
     view it as starting at 'interval_start' with length 'interval_length' in hours. This function is to map a timestamp to
