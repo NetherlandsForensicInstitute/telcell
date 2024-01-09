@@ -25,8 +25,8 @@ for name in ["Bas", "Tim", "Stijn", "Daan", "Koen", "Martijn", "Pieter", "Maarte
     lon_idx = random.randint(0, grid_length-1)
     lat_idx = random.randint(0, grid_length-1)
 
-    track = []
-    sensor = []
+    owners = []
+    devices = []
     timestamp = []
     cell_identifier = []
     lon = []
@@ -38,8 +38,8 @@ for name in ["Bas", "Tim", "Stijn", "Daan", "Koen", "Martijn", "Pieter", "Maarte
 
     for day in range(5):
         for measurement in range(20):
-            track.append(name)
-            sensor.append(name + "1")
+            owners.append(name)
+            devices.append(name + "1")
 
             date += timedelta(minutes=random.randint(1, 30))
             timestamp.append(date.isoformat(" "))
@@ -67,8 +67,8 @@ for name in ["Bas", "Tim", "Stijn", "Daan", "Koen", "Martijn", "Pieter", "Maarte
         date = startdate + timedelta(days=day+1, minutes=random.randint(0, 10))
 
     df1 = pd.DataFrame({
-        'track': track,
-        'sensor': sensor,
+        'owner': owners,
+        'device': devices,
         'timestamp': timestamp,
         'celldb.wgs84.lon': lon,
         'celldb.wgs84.lat': lat,
@@ -76,9 +76,9 @@ for name in ["Bas", "Tim", "Stijn", "Daan", "Koen", "Martijn", "Pieter", "Maarte
         'lon_index': lon_idxs,
         'lat_index': lat_idxs})
 
-    # For the next sensor on the same track, we randomly add variations to the timestamp and location
+    # For the next device of this owner, we randomly add variations to the timestamp and location
     df2 = df1.copy()
-    df2["sensor"] = name + "2"
+    df2["device"] = name + "2"
 
     df2["timestamp"] = df2["timestamp"].apply(lambda x: (datetime.strptime(x, "%Y-%m-%d %H:%M:%S%z") +
                                                          timedelta(minutes=random.randint(0, 10))).isoformat(" "))

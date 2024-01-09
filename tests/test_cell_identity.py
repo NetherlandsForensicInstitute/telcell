@@ -1,6 +1,5 @@
-from itertools import pairwise
-
 import pytest
+from more_itertools import pairwise
 
 from telcell.cell_identity import CellIdentity, Radio
 

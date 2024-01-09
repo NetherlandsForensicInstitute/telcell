@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Tuple, Optional, Mapping
 
 from telcell.data.models import Track
 
@@ -16,7 +17,7 @@ class Model(ABC):
             track_a: Track,
             track_b: Track,
             **kwargs,
-    ) -> float:
+    ) -> Tuple[Optional[float], Optional[Mapping]]:
         """
         Computes a likelihood ratio for `track_a` and  `track_b`.
 
@@ -34,7 +35,7 @@ class Model(ABC):
 
         :param track_a: The left track of the pair
         :param track_b: The right track of the pair
-        :return: A likelihood ratio
+        :return: A likelihood ratio and an optional mapping with additional information
         """
         raise NotImplementedError
 

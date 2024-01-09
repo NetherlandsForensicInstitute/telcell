@@ -1,5 +1,10 @@
-lir==0.1.23
+lir
 lrbenchmark>=0.1.2
-numpy==1.24.3
-scikit-learn==1.2.2
+numpy
+pydeck
+scikit-learn
+streamlit
 pyproj
+tensorflow~=2.13.0
+confidence
+seaborn

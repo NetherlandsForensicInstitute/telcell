@@ -1,3 +1,5 @@
+from typing import Optional, Mapping, Tuple
+
 from telcell.data.models import Track
 from telcell.models.model import Model
 
@@ -13,5 +15,5 @@ class DummyModel(Model):
             track_a: Track,
             track_b: Track,
             **kwargs,
-    ) -> float:
-        return 1.0
+    ) -> Tuple[float, Optional[Mapping]]:
+        return 1.0, None

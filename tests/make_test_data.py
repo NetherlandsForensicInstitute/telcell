@@ -13,8 +13,8 @@ startdate = datetime.datetime(2023, 5, 17, 14, 16, 00, tzinfo=timezone.utc)
 # Simple testdata - 50 points per track, 3 tracks
 id = 0
 ids = []
-track = []
-sensor = []
+owners = []
+devices = []
 timestamp = []
 lon = []
 lat = []
@@ -23,8 +23,8 @@ degrees = []
 for i in range(50):
     ids.append(id)
     id += 1
-    track.append("TelA")
-    sensor.append("A1")
+    owners.append("TelA")
+    devices.append("A1")
     timestamp.append((startdate + timedelta(minutes=i)).isoformat(" "))
     lat.append(startloc[0] + (i*0.001))
     lon.append(startloc[1] + (i*0.001))
@@ -34,8 +34,8 @@ for i in range(50):
 for i in range(50):
     ids.append(id)
     id += 1
-    track.append("TelA")
-    sensor.append("A2")
+    owners.append("TelA")
+    devices.append("A2")
     timestamp.append((startdate + timedelta(minutes=i)).isoformat(" "))
     lat.append(startloc[0] + (i*0.001) + 0.001*random.random())
     lon.append(startloc[1] + (i*0.001) + 0.001*random.random())
@@ -45,8 +45,8 @@ for i in range(50):
 for i in range(50):
     ids.append(id)
     id += 1
-    track.append("TelB")
-    sensor.append("B1")
+    owners.append("TelB")
+    devices.append("B1")
     timestamp.append((startdate + timedelta(minutes=i)).isoformat(" "))
     lat.append(startloc[0] - (i * 0.001))
     lon.append(startloc[1] - (i * 0.001))
@@ -54,8 +54,8 @@ for i in range(50):
 
 df = pd.DataFrame({
     'id': ids,
-    'track': track,
-    'sensor': sensor,
+    'owner': owners,
+    'device': devices,
     'timestamp': timestamp,
     'celldb.wgs84.lon': lon,
     'celldb.wgs84.lat': lat,
@@ -67,8 +67,8 @@ df.to_csv('testdata.csv', index=False)
 number_of_days = 3
 id = 0
 ids = []
-track = []
-sensor = []
+owners = []
+devices = []
 timestamp = []
 lon = []
 lat = []
@@ -77,8 +77,8 @@ degrees = []
 for i in range(number_of_days*1440):
     ids.append(id)
     id += 1
-    track.append("TelA")
-    sensor.append("A1")
+    owners.append("TelA")
+    devices.append("A1")
     timestamp.append((startdate + timedelta(
         minutes=i+0.5*(random.random()-.5))).isoformat(" "))
     lat.append(round(startloc[0] + (i*0.001), 4))
@@ -89,8 +89,8 @@ for i in range(number_of_days*1440):
 for i in range(number_of_days*1440):
     ids.append(id)
     id += 1
-    track.append("TelA")
-    sensor.append("A2")
+    owners.append("TelA")
+    devices.append("A2")
     timestamp.append((startdate + timedelta(
         minutes=i+0.5*(random.random()-.5))).isoformat(" "))
     lat.append(round(startloc[0] + (i*0.001) + 0.001*random.random(), 4))
@@ -101,8 +101,8 @@ for i in range(number_of_days*1440):
 for i in range(number_of_days*1440):
     ids.append(id)
     id += 1
-    track.append("TelB")
-    sensor.append("B1")
+    owners.append("TelB")
+    devices.append("B1")
     timestamp.append((startdate + timedelta(
         minutes=i + 0.5 * (random.random() - .5))).isoformat(" "))
     lat.append(round(startloc[0] - (i * 0.001), 4))
@@ -111,8 +111,8 @@ for i in range(number_of_days*1440):
 
 df = pd.DataFrame({
     'id': ids,
-    'track': track,
-    'sensor': sensor,
+    'owner': owners,
+    'device': devices,
     'timestamp': timestamp,
     'celldb.wgs84.lon': lon,
     'celldb.wgs84.lat': lat,
