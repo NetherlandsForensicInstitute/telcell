@@ -1,15 +1,18 @@
 """Script containing an example how to use telcell."""
 
 from pathlib import Path
+from typing import Any
 
 from lrbenchmark.evaluation import Setup
 
+from telcell.data.models import Measurement
 from telcell.data.parsers import parse_measurements_csv
 from telcell.models import DummyModel
 from telcell.models.simplemodel import MeasurementPairClassifier
 from telcell.pipeline import run_pipeline
 from telcell.utils.savefile import make_output_plots
-from telcell.utils.transform import slice_track_pairs_to_intervals, create_track_pairs
+from telcell.utils.transform import slice_track_pairs_to_intervals, create_track_pairs, \
+    categorize_measurement_by_rounded_coordinates
 
 
 def main():
@@ -25,6 +28,7 @@ def main():
 
     # Specify the models that we want to evaluate.
     models = [DummyModel(), MeasurementPairClassifier(
+        categorize_measurement_for_rarity=categorize_measurement_by_rounded_coordinates,
         colocated_training_data=parse_measurements_csv(
             'tests/test_measurements.csv'))]
 
