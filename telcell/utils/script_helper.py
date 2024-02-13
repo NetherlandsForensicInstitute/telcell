@@ -1,17 +1,15 @@
 import argparse
+import contextlib
 import logging
 import os
 from logging.handlers import RotatingFileHandler
 
 import confidence
 
+from telcell.celldb import PgDatabase, CellDatabase
 from telcell.utils import postgres
 
 DEFAULT_LOGLEVEL = logging.WARNING
-
-
-def load_config():
-    return confidence.load_name("cellsite", "../../cellsite", "local", "../../local")
 
 
 def build_argparser(cfg, name):
@@ -44,6 +42,11 @@ def get_database_connection(config_path: str, drop_schema: bool = False):
         postgres.create_schema(con, primary_schema)
 
     return postgres.pgconnect(credentials=credentials, schema=schema, use_wrapper=True)
+
+
+@contextlib.contextmanager
+def get_cell_database(config_path: str, drop_schema: bool = False, **kwargs) -> CellDatabase:
+    yield PgDatabase(get_database_connection(config_path, drop_schema), **kwargs)
 
 
 def setup_logging(path, verbosity_offset):
