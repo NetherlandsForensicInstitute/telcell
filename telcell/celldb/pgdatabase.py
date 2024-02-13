@@ -72,6 +72,9 @@ def _build_cell_identity_query(ci):
     else:
         raise ValueError(f"unsupported cell type: {type(ci)}")
 
+    if len(qwhere) == 0:
+        qwhere.append("TRUE")
+
     return " AND ".join(qwhere), qargs
 
 
@@ -105,7 +108,7 @@ class PgDatabase(CellDatabase):
         @param on_duplicate: policy when the cell database has two or more hits for the same cell in a call to `get()`.
         """
         self._con = con
-        self._qwhere = qwhere or []
+        self._qwhere = qwhere or ["TRUE"]
         self._qargs = qargs or []
         self._qorder = qorder or ""
         self._count_limit = count_limit
