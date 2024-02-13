@@ -170,7 +170,8 @@ class PgDatabase(CellDatabase):
         :param coords: Point for which nearby antennas are retrieved
         :param distance_limit_m: antennas should be within this range
         :param date: select antennas that were valid at `date`
-        :param radio: antennas should be limited to this radio technology, e.g.: LTE, UMTS, GSM (accepts `str` or list of `str`)
+        :param radio: antennas should be limited to this radio technology, e.g.: LTE, UMTS, GSM (accepts `str` or list
+            of `str`)
         :param mcc: antennas should be limited to this mcc
         :param mnc: antennas should be limited to this mnc
         :param count_limit: maximum number of antennas to return
@@ -291,7 +292,7 @@ def csv_import(con, flo, progress: Callable = lambda x: x):
 
                 x, y = point_to_rd(geopy.Point(longitude=lon, latitude=lat))
                 cur.execute(
-                    f"""
+                    """
                     INSERT INTO antenna_light(date_start, date_end, radio, mcc, mnc, lac, ci, eci, rd, azimuth)
                     VALUES(%s, %s, %s, %s, %s, %s, %s, %s, 'SRID=4326;POINT('||%s||' '||%s||')', %s)
                 """,

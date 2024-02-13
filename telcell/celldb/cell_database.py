@@ -34,7 +34,7 @@ class CellDatabase(Iterable[Properties]):
     @abstractmethod
     def search(
         self,
-        coords: geopy.Point,
+        coords: geopy.Point = None,
         distance_limit_m: float = None,
         distance_lower_limit_m: float = None,
         date: datetime.datetime = None,
@@ -58,6 +58,9 @@ class CellDatabase(Iterable[Properties]):
         :return: retrieved antennas within reach from the Point
         """
         raise NotImplementedError
+
+    def limit(self, count_limit: int) -> CellDatabase:
+        return self.search(None, count_limit=count_limit)
 
     def __len__(self):
         raise NotImplementedError

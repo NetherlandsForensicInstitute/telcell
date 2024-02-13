@@ -107,7 +107,7 @@ class Angle:
 
 def normalize_angle(angle: Angle) -> Angle:
     """
-    Normalizes an angle to be in the range [-180,180> degrees
+    Normalizes an angle to be in the range [-180,180> degrees.
     """
     normalized = (angle.degrees + 180) % 360 - 180
     return Angle(degrees=normalized)
@@ -123,8 +123,8 @@ def azimuth_deg(coord1: geopy.Point, coord2: geopy.Point) -> float:
 
 def azimuth(coord1: geopy.Point, coord2: geopy.Point) -> Angle:
     """
-    Calculates the azimuth of the line between two points. That is, the angle between the line from the first point northward and
-    the line from the first point to the second.
+    Calculates the azimuth of the line between two points. That is, the angle between the line from the first point
+    northward and the line from the first point to the second.
 
     @param coord1: the coordinates of the first point
     @param coord2: the coordinates of the second point
