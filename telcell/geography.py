@@ -115,7 +115,9 @@ def normalize_angle(angle: Angle) -> Angle:
 
 def azimuth_deg(coord1: geopy.Point, coord2: geopy.Point) -> float:
     geodesic = pyproj.Geod(ellps="WGS84")
-    fwd_azimuth, back_azimuth, distance = geodesic.inv(coord1.longitude, coord1.latitude, coord2.longitude, coord2.latitude)
+    fwd_azimuth, back_azimuth, distance = geodesic.inv(
+        coord1.longitude, coord1.latitude, coord2.longitude, coord2.latitude
+    )
     return fwd_azimuth if distance > 0 else float("nan")
 
 
