@@ -3,18 +3,11 @@ from __future__ import annotations
 import math
 
 import geopy
+import geopy.units
 import pyproj
 
 
 GEOD_WGS84 = pyproj.Geod(ellps="WGS84")
-
-
-def _degrees_to_radians(degrees: float) -> float:
-    return degrees * math.pi / 180
-
-
-def _radians_to_degrees(radians: float) -> float:
-    return radians * 180 / math.pi
 
 
 class Angle:
@@ -24,13 +17,15 @@ class Angle:
     """
 
     def __init__(self, degrees: float = None, radians: float = None):
-        assert (degrees is None) != (
-            radians is None
-        ), "provide exactly one of degrees and radians"
+        assert (
+            degrees is None or radians is None
+        ), "angle requires either degrees or radians; both provided"
         if degrees is not None:
             self._degrees = degrees
-        if radians is not None:
-            self._degrees = _radians_to_degrees(radians)
+        elif radians is not None:
+            self._degrees = geopy.units.degrees(radians=radians)
+        else:
+            raise ValueError("angle requires either degrees or radians; none provided")
 
     def __eq__(self, other):
         if isinstance(other, Angle):
@@ -102,7 +97,7 @@ class Angle:
 
     @property
     def radians(self):
-        return _degrees_to_radians(self._degrees)
+        return geopy.units.radians(degrees=self._degrees)
 
 
 def normalize_angle(angle: Angle) -> Angle:
