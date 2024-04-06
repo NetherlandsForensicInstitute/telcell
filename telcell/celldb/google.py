@@ -86,10 +86,16 @@ class GoogleGeolocationService(CellCollection):
         count_limit: Optional[int] = 10000,
         exclude: Optional[CellIdentity] = None,
     ) -> CellCollection:
-        raise NotImplemented("google geolocation service does not support this feature")
+        raise NotImplementedError(
+            "google geolocation service does not support this feature"
+        )
 
     def __iter__(self):
-        raise NotImplemented("google geolocation service does not support this feature")
+        raise NotImplementedError(
+            "google geolocation service does not support this feature"
+        )
 
     def __len__(self):
-        raise NotImplemented("google geolocation service does not support this feature")
+        raise NotImplementedError(
+            "google geolocation service does not support this feature"
+        )
