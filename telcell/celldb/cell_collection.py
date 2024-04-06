@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import abstractmethod
 import datetime
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Sized
 
 import geopy
 
@@ -19,7 +19,18 @@ class Properties(dict):
             return Properties()
 
 
-class CellDatabase(Iterable[Properties]):
+class CellCollection(Iterable[Properties], Sized):
+    """
+    Collection of cell towers in a cellular network, that may be queried by cell id (e.g. for geocoding) or by
+    coordinates (e.g. reverse geocoding).
+
+    The known fields for cells may vary by database and is generally a subset of:
+    - cell: the cell identity
+    - wgs84: the geolocation of the cell tower or a connected device
+    - accuracy: the accuracy of the location of the connected device in meters
+    - azimuth: the orientation of the cell tower in meters
+    """
+
     @abstractmethod
     def get(self, date: datetime.datetime, ci: CellIdentity) -> Optional[Properties]:
         """
@@ -43,7 +54,7 @@ class CellDatabase(Iterable[Properties]):
         mnc: int = None,
         count_limit: Optional[int] = 10000,
         exclude: Optional[CellIdentity] = None,
-    ) -> CellDatabase:
+    ) -> CellCollection:
         """
         Given a Point, find antennas that are in reach from this point sorted by the distance from the grid point.
 
@@ -59,8 +70,5 @@ class CellDatabase(Iterable[Properties]):
         """
         raise NotImplementedError
 
-    def limit(self, count_limit: int) -> CellDatabase:
+    def limit(self, count_limit: int) -> CellCollection:
         return self.search(None, count_limit=count_limit)
-
-    def __len__(self):
-        raise NotImplementedError

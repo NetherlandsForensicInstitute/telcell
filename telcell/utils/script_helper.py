@@ -6,7 +6,7 @@ from logging.handlers import RotatingFileHandler
 
 import confidence
 
-from telcell.celldb import PgDatabase, CellDatabase
+from telcell.celldb import PgCollection, CellCollection
 from telcell.utils import postgres
 
 DEFAULT_LOGLEVEL = logging.WARNING
@@ -45,8 +45,10 @@ def get_database_connection(config_path: str, drop_schema: bool = False):
 
 
 @contextlib.contextmanager
-def get_cell_database(config_path: str, drop_schema: bool = False, **kwargs) -> CellDatabase:
-    yield PgDatabase(get_database_connection(config_path, drop_schema), **kwargs)
+def get_cell_database(
+    config_path: str, drop_schema: bool = False, **kwargs
+) -> CellCollection:
+    yield PgCollection(get_database_connection(config_path, drop_schema), **kwargs)
 
 
 def setup_logging(path, verbosity_offset):

@@ -2,7 +2,7 @@ import warnings
 from typing import Optional, Sequence
 
 from telcell.cell_identity import CellIdentity
-from telcell.celldb.cell_database import Properties
+from telcell.celldb.cell_collection import Properties
 
 
 def get_duplicate_policy(name: str):
@@ -21,7 +21,9 @@ def warn(ci: CellIdentity, results: Sequence[Properties]) -> Optional[Properties
     return results[0]
 
 
-def take_first(_ci: CellIdentity, results: Sequence[Properties]) -> Optional[Properties]:
+def take_first(
+    _ci: CellIdentity, results: Sequence[Properties]
+) -> Optional[Properties]:
     return results[0]
 
 

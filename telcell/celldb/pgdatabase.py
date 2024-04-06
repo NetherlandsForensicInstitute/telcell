@@ -6,9 +6,14 @@ from typing import Optional, List, Iterable, Callable, Tuple
 
 import geopy
 
-from telcell.cell_identity import Radio, CellIdentity, CellGlobalIdentity, EutranCellGlobalIdentity
+from telcell.cell_identity import (
+    Radio,
+    CellIdentity,
+    CellGlobalIdentity,
+    EutranCellGlobalIdentity,
+)
 from . import duplicate_policy
-from .cell_database import CellDatabase, Properties
+from .cell_collection import CellCollection, Properties
 from ..data.models import RD_TO_WGS84, WGS84_TO_RD
 from ..geography import Angle
 
@@ -34,18 +39,23 @@ def point_to_rd(point: geopy.Point) -> Tuple[int, int]:
 def _build_antenna(row):
     date_start, date_end, radio, mcc, mnc, lac, ci, eci, rdx, rdy, azimuth_degrees = row
     if radio == Radio.GSM.value or radio == Radio.UMTS.value:
-        retrieved_ci = CellIdentity.create(radio=radio, mcc=mcc, mnc=mnc, lac=lac, ci=ci)
+        retrieved_ci = CellIdentity.create(
+            radio=radio, mcc=mcc, mnc=mnc, lac=lac, ci=ci
+        )
     elif radio == Radio.LTE.value or radio == Radio.NR.value:
         retrieved_ci = CellIdentity.create(radio=radio, mcc=mcc, mnc=mnc, eci=eci)
     elif radio is not None:
         raise ValueError(f"unrecognized radio type: {radio}")
     elif lac is not None and ci <= 0xFFFF:
-        retrieved_ci = CellIdentity.create(radio=radio, mcc=mcc, mnc=mnc, lac=lac, ci=ci)
+        retrieved_ci = CellIdentity.create(
+            radio=radio, mcc=mcc, mnc=mnc, lac=lac, ci=ci
+        )
     else:
         retrieved_ci = CellIdentity.create(radio=radio, mcc=mcc, mnc=mnc, eci=eci)
 
     coords = rd_to_point(rdx, rdy)
-    return Properties(wgs84=coords, azimuth=Angle(degrees=azimuth_degrees), cell=retrieved_ci)
+    azimuth = Angle(degrees=azimuth_degrees) if azimuth_degrees is not None else None
+    return Properties(wgs84=coords, azimuth=azimuth, cell=retrieved_ci)
 
 
 def _build_cell_identity_query(ci):
@@ -78,7 +88,7 @@ def _build_cell_identity_query(ci):
     return " AND ".join(qwhere), qargs
 
 
-class PgDatabase(CellDatabase):
+class PgCollection(CellCollection):
     def __init__(
         self,
         con,
@@ -126,8 +136,14 @@ class PgDatabase(CellDatabase):
         if isinstance(date, datetime.date):
             date = datetime.datetime.combine(date, datetime.datetime.min.time())
 
-        qwhere = self._qwhere + ["(date_start is NULL OR %s >= date_start) AND (date_end is NULL OR %s < date_end)"]
-        qargs = self._qargs + [date, date]
+        qwhere = list(self._qwhere)
+        qargs = list(self._qargs)
+
+        if date is not None:
+            qwhere = qwhere + [
+                "(date_start is NULL OR %s >= date_start) AND (date_end is NULL OR %s < date_end)"
+            ]
+            qargs = qargs + [date, date]
 
         add_qwhere, add_qargs = _build_cell_identity_query(ci)
         qwhere.append(add_qwhere)
@@ -163,7 +179,7 @@ class PgDatabase(CellDatabase):
         count_limit: Optional[int] = 10000,
         random_order: bool = False,
         exclude: Optional[List[CellIdentity]] = None,
-    ) -> CellDatabase:
+    ) -> CellCollection:
         """
         Given a Point, find antennas that are in reach from this point sorted by the distance from the grid point.
 
@@ -180,12 +196,16 @@ class PgDatabase(CellDatabase):
         """
         qwhere = list(self._qwhere)
         qargs = list(self._qargs)
-        if coords is not None:
-            assert distance_limit_m is not None, "search for coords without distance limit"
+
+        if coords is not None and distance_limit_m is not None:
             x, y = point_to_rd(coords)
-            qwhere.append(f"ST_DWithin(rd, 'SRID=4326;POINT({x} {y})', {distance_limit_m})")
+            qwhere.append(
+                f"ST_DWithin(rd, 'SRID=4326;POINT({x} {y})', {distance_limit_m})"
+            )
             if distance_lower_limit_m is not None:
-                qwhere.append(f"NOT ST_DWithin(rd, 'SRID=4326;POINT({x} {y})', {distance_lower_limit_m})")
+                qwhere.append(
+                    f"NOT ST_DWithin(rd, 'SRID=4326;POINT({x} {y})', {distance_lower_limit_m})"
+                )
         if date is not None:
             qwhere.append("(date_start is NULL OR %s >= date_start)")
             qwhere.append("(date_end is NULL OR %s < date_end)")
@@ -210,7 +230,6 @@ class PgDatabase(CellDatabase):
                 qwhere.append(f"NOT ({add_qwhere})")
                 qargs.extend(add_qargs)
 
-        count_limit = count_limit if count_limit is not None else self._count_limit
         qorder = self._qorder
         if random_order is not None and random_order:
             qorder = "ORDER BY RANDOM()"
@@ -218,20 +237,29 @@ class PgDatabase(CellDatabase):
             x, y = point_to_rd(coords)
             qorder = f"ORDER BY ST_Distance(rd, 'SRID=4326;POINT({x} {y})')"
 
-        return PgDatabase(self._con, qwhere, qargs, qorder, count_limit, self._on_duplicate)
+        count_limit = count_limit if count_limit is not None else self._count_limit
+
+        return PgCollection(
+            self._con, qwhere, qargs, qorder, count_limit, self._on_duplicate
+        )
+
+    def close(self):
+        if self._cur is not None:
+            self._cur.close()
 
     def __enter__(self):
         self._cur = self._con.cursor()
         return self
 
     def __exit__(self, type, value, tb):
-        self._cur.close()
+        self.close()
 
     def __iter__(self):
-        assert self._cur is not None, "use within context"
+        if self._cur is None:
+            self._cur = self._con.cursor()
 
         q = f"""
-            SELECT date_start, date_end, radio, mcc, mnc, lac, ci, ST_X(rd), ST_Y(rd), azimuth
+            SELECT date_start, date_end, radio, mcc, mnc, lac, ci, eci, ST_X(rd), ST_Y(rd), azimuth
             FROM antenna_light
             WHERE {' AND '.join(qw for qw in self._qwhere)}
             {self._qorder}
