@@ -1,35 +1,56 @@
 from __future__ import annotations
 import math
+import warnings
 from dataclasses import dataclass
 from datetime import datetime
 from functools import cached_property
 from typing import Any, Mapping, Tuple, Sequence, Iterator, Union
 
+import geopy
 import pyproj
 from pyproj import Proj, Geod, Transformer
 
-RD = ("+proj=sterea +lat_0=52.15616055555555 +lon_0=5.38763888888889 "
-      "+k=0.999908 +x_0=155000 +y_0=463000 +ellps=bessel "
-      "+towgs84=565.237,50.0087,465.658,-0.406857,0.350733,-1.87035,4.0812 "
-      "+units=m +no_defs")
-GOOGLE = ('+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 '
-          '+lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m '
-          '+nadgrids=@null +no_defs +over')
-WGS84 = '+proj=latlong +datum=WGS84'
+RD = (
+    "+proj=sterea +lat_0=52.15616055555555 +lon_0=5.38763888888889 "
+    "+k=0.999908 +x_0=155000 +y_0=463000 +ellps=bessel "
+    "+towgs84=565.237,50.0087,465.658,-0.406857,0.350733,-1.87035,4.0812 "
+    "+units=m +no_defs"
+)
+GOOGLE = (
+    "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 "
+    "+lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m "
+    "+nadgrids=@null +no_defs +over"
+)
+WGS84 = "+proj=latlong +datum=WGS84"
 rd_projection = Proj(RD)
 google_projection = Proj(GOOGLE)
 wgs84_projection = Proj(WGS84)
-geodesic = Geod('+ellps=sphere')
+geodesic = Geod("+ellps=sphere")
 WGS84_TO_RD = Transformer.from_proj(wgs84_projection, rd_projection)
 RD_TO_WGS84 = Transformer.from_proj(rd_projection, wgs84_projection)
-# TODO: Realistic boundsx
-rd_x_range = (1000, 350000)
-rd_y_range = (1000, 700000)
-GEOD_WGS84 = pyproj.Geod(ellps='WGS84')
+# TODO: more accurate range would be: x (7000, 300000) and y (289000, 629000)
+RD_X_RANGE = (1000, 300000)
+RD_Y_RANGE = (1000, 629000)
+GEOD_WGS84 = pyproj.Geod(ellps="WGS84")
 
 
-def approximately_equal(first, second, tolerance=.0001):
+def approximately_equal(first, second, tolerance=0.0001):
     return abs(first - second) < tolerance
+
+
+def rd_to_point(x: int, y: int) -> geopy.Point:
+    if not (RD_Y_RANGE[0] <= y <= RD_Y_RANGE[1]) or not (
+        RD_X_RANGE[0] <= x <= RD_X_RANGE[1]
+    ):
+        warnings.warn(
+            f"rijksdriehoek coordinates {x}, {y} outside range: x={RD_X_RANGE}, y={RD_Y_RANGE}"
+        )
+    c = RD_TO_WGS84.transform(x, y)
+    return geopy.Point(longitude=c[0], latitude=c[1])
+
+
+def point_to_rd(point: geopy.Point) -> Tuple[int, int]:
+    return WGS84_TO_RD.transform(point.longitude, point.latitude)
 
 
 @dataclass(frozen=True)
@@ -38,10 +59,16 @@ class RDPoint:
     y: float
 
     def __post_init__(self):
-        if self.x < rd_x_range[0] or self.x > rd_x_range[1] or self.y < \
-                rd_y_range[0] or self.y > rd_y_range[1]:
-            raise ValueError(f'Invalid rijksdriehoek coordinates: ({self.x=}, {self.y=}); '
-                             f'allowed range: x={rd_x_range}, y={rd_y_range}.')
+        if (
+            self.x < RD_X_RANGE[0]
+            or self.x > RD_X_RANGE[1]
+            or self.y < RD_Y_RANGE[0]
+            or self.y > RD_Y_RANGE[1]
+        ):
+            raise ValueError(
+                f"Invalid rijksdriehoek coordinates: ({self.x=}, {self.y=}); "
+                f"allowed range: x={RD_X_RANGE}, y={RD_Y_RANGE}."
+            )
 
     @property
     def xy(self) -> Tuple[float, float]:
@@ -53,13 +80,17 @@ class RDPoint:
 
     def distance(self, other: Union[RDPoint, Point]) -> float:
         other_rd = other.convert_to_rd() if isinstance(other, Point) else other
-        return math.sqrt(math.pow(self.x - other_rd.x, 2) + math.pow(self.y - other_rd.y, 2))
+        return math.sqrt(
+            math.pow(self.x - other_rd.x, 2) + math.pow(self.y - other_rd.y, 2)
+        )
 
-    def approx_equal(self, other: Union[RDPoint, Point], tolerance_m: float = 1) -> bool:
+    def approx_equal(
+        self, other: Union[RDPoint, Point], tolerance_m: float = 1
+    ) -> bool:
         return self.distance(other) < tolerance_m
 
     def __repr__(self):
-        return f'RDPoint(x={self.x}, y={self.y})'
+        return f"RDPoint(x={self.x}, y={self.y})"
 
 
 @dataclass(frozen=True)
@@ -69,7 +100,7 @@ class Point:
 
     def __post_init__(self):
         if self.lat < -90 or self.lat > 90 or self.lon < -180 or self.lon > 180:
-            raise ValueError(f'Invalid wgs84 coordinates: ({self.lat=}, {self.lon=}).')
+            raise ValueError(f"Invalid wgs84 coordinates: ({self.lat=}, {self.lon=}).")
 
     @property
     def latlon(self) -> Tuple[float, float]:
@@ -82,7 +113,9 @@ class Point:
     def distance(self, other: Union[RDPoint, Point]) -> float:
         self_rd = self.convert_to_rd()
         other_rd = other.convert_to_rd() if isinstance(other, Point) else other
-        return math.sqrt(math.pow(self_rd.x - other_rd.x, 2) + math.pow(self_rd.y - other_rd.y, 2))
+        return math.sqrt(
+            math.pow(self_rd.x - other_rd.x, 2) + math.pow(self_rd.y - other_rd.y, 2)
+        )
 
     def approx_equal(self, other: Union[RDPoint, Point], tolerance_m: int = 1) -> bool:
         return self.distance(other) < tolerance_m
@@ -94,7 +127,7 @@ class Point:
             return False
 
     def __repr__(self):
-        return f'Point(lat={self.lat}, lon={self.lon})'
+        return f"Point(lat={self.lat}, lon={self.lon})"
 
 
 @dataclass(eq=True, frozen=True)
@@ -108,6 +141,7 @@ class Measurement:
             this measurement. These could for example inform the accuracy or
             uncertainty of the measured WGS84 coordinates.
     """
+
     coords: Point
     timestamp: datetime
     extra: Mapping[str, Any]
@@ -132,8 +166,14 @@ class Measurement:
         return f"<{self.timestamp}: ({self.lat}, {self.lon})>"
 
     def __hash__(self):
-        return hash((self.lat, self.lon, self.timestamp.date(),
-                     *(_extra for _extra in self.extra.values())))
+        return hash(
+            (
+                self.lat,
+                self.lon,
+                self.timestamp.date(),
+                *(_extra for _extra in self.extra.values()),
+            )
+        )
 
 
 @dataclass
@@ -145,6 +185,7 @@ class Track:
     :param device: The name of the device.
     :param measurements: A series of measurements ordered by timestamp.
     """
+
     owner: str
     device: str
     measurements: Sequence[Measurement]

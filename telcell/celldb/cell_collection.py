@@ -58,15 +58,16 @@ class CellCollection(Iterable[Properties], Sized):
         """
         Given a Point, find antennas that are in reach from this point sorted by the distance from the grid point.
 
-        :param coords: Point for which nearby antennas are retrieved
-        :param distance_limit_m: antennas should be within this range
-        :param date: used to select active antennas
-        :param radio: antennas should be limited to this radio technology, e.g.: LTE, UMTS, GSM
-        :param mcc: antennas should be limited to this mcc
-        :param mnc: antennas should be limited to this mnc
-        :param count_limit: maximum number of antennas to return
-        :param exclude: antenna that should be excluded from the retrieved antennas
-        :return: retrieved antennas within reach from the Point
+        :param coords: antenna selection criteria are relative to this point
+        :param distance_limit_m: select antennas within this range of `coords`
+        :param distance_lower_limit_m: select antennas beyond this range of `coords`
+        :param date: select antennas which are valid at this date
+        :param radio: select antennas using this radio technology, e.g.: LTE, UMTS, GSM
+        :param mcc: select antennas with this MCC
+        :param mnc: select antennas with this MNC
+        :param count_limit: return at most this number of antennas
+        :param exclude: excluded antennas with this `CellIdentity`
+        :return: retrieved selected antennas
         """
         raise NotImplementedError
 

@@ -14,29 +14,11 @@ from telcell.cell_identity import (
 )
 from . import duplicate_policy
 from .cell_collection import CellCollection, Properties
-from ..data.models import RD_TO_WGS84, WGS84_TO_RD
+from ..data.models import rd_to_point, point_to_rd
 from ..geography import Angle
 
-RD_X_RANGE = (7000, 300000)
-RD_Y_RANGE = (289000, 629000)
 
-
-def rd_to_point(x: int, y: int) -> geopy.Point:
-    if not (RD_Y_RANGE[0] <= y <= RD_Y_RANGE[1]) or not (
-        RD_X_RANGE[0] <= x <= RD_X_RANGE[1]
-    ):
-        warnings.warn(
-            f"rijksdriehoek coordinates {x}, {y} outside range: x={RD_X_RANGE}, y={RD_Y_RANGE}"
-        )
-    c = RD_TO_WGS84.transform(x, y)
-    return geopy.Point(longitude=c[0], latitude=c[1])
-
-
-def point_to_rd(point: geopy.Point) -> Tuple[int, int]:
-    return WGS84_TO_RD.transform(point.longitude, point.latitude)
-
-
-def _build_antenna(row):
+def _build_antenna(row: Tuple) -> Properties:
     date_start, date_end, radio, mcc, mnc, lac, ci, eci, rdx, rdy, azimuth_degrees = row
     if radio == Radio.GSM.value or radio == Radio.UMTS.value:
         retrieved_ci = CellIdentity.create(
@@ -92,11 +74,11 @@ class PgCollection(CellCollection):
     def __init__(
         self,
         con,
-        qwhere=None,
-        qargs=None,
-        qorder=None,
-        count_limit: int = None,
         on_duplicate: Callable = duplicate_policy.warn,
+        _qwhere=None,
+        _qargs=None,
+        _qorder=None,
+        _count_limit: int = None,
     ):
         """
         Initializes a `PgDatabase` object.
@@ -110,20 +92,20 @@ class PgCollection(CellCollection):
         - `celldb.duplicate_policy.warn`: same as `take_first`, and emits a warning
         - `celldb.duplicate_policy.exception`: throws an exception
 
-        @param con: an active postgres connection
-        @param qwhere:
-        @param qargs:
-        @param qorder:
-        @param count_limit:
-        @param on_duplicate: policy when the cell database has two or more hits for the same cell in a call to `get()`.
+        :param con: an active postgres connection
+        :param on_duplicate: policy when the cell database has two or more hits for the same cell in a call to `get()`.
+        :param _qwhere: for private use: add criteria in WHERE clause
+        :param _qargs: for private use: add query arguments
+        :param _qorder: for private use: add criteria in ORDER clause
+        :param _count_limit: for private use: add item limit
         """
         self._con = con
-        self._qwhere = qwhere or ["TRUE"]
-        self._qargs = qargs or []
-        self._qorder = qorder or ""
-        self._count_limit = count_limit
-        self._cur = None
         self._on_duplicate = on_duplicate
+        self._qwhere = _qwhere or ["TRUE"]
+        self._qargs = _qargs or []
+        self._qorder = _qorder or ""
+        self._count_limit = _count_limit
+        self._cur = None
 
     def get(self, date: datetime.datetime, ci: CellIdentity) -> Optional[Properties]:
         """
@@ -136,36 +118,13 @@ class PgCollection(CellCollection):
         if isinstance(date, datetime.date):
             date = datetime.datetime.combine(date, datetime.datetime.min.time())
 
-        qwhere = list(self._qwhere)
-        qargs = list(self._qargs)
-
-        if date is not None:
-            qwhere = qwhere + [
-                "(date_start is NULL OR %s >= date_start) AND (date_end is NULL OR %s < date_end)"
-            ]
-            qargs = qargs + [date, date]
-
-        add_qwhere, add_qargs = _build_cell_identity_query(ci)
-        qwhere.append(add_qwhere)
-        qargs.extend(add_qargs)
-
-        with self._con.cursor() as cur:
-            cur.execute(
-                f"""
-                SELECT date_start, date_end, radio, mcc, mnc, lac, ci, eci, ST_X(rd), ST_Y(rd), azimuth
-                FROM antenna_light
-                WHERE {' AND '.join(qw for qw in qwhere)}
-            """,
-                qargs,
-            )
-
-            results = [_build_antenna(row) for row in cur.fetchall()]
-            if len(results) == 0:
-                return None
-            elif len(results) > 1:
-                return self._on_duplicate(ci, results)
-            else:
-                return results[0]
+        results = list(self.search(date=date))
+        if len(results) == 0:
+            return None
+        elif len(results) > 1:
+            return self._on_duplicate(ci, results)
+        else:
+            return results[0]
 
     def search(
         self,
@@ -180,20 +139,6 @@ class PgCollection(CellCollection):
         random_order: bool = False,
         exclude: Optional[List[CellIdentity]] = None,
     ) -> CellCollection:
-        """
-        Given a Point, find antennas that are in reach from this point sorted by the distance from the grid point.
-
-        :param coords: Point for which nearby antennas are retrieved
-        :param distance_limit_m: antennas should be within this range
-        :param date: select antennas that were valid at `date`
-        :param radio: antennas should be limited to this radio technology, e.g.: LTE, UMTS, GSM (accepts `str` or list
-            of `str`)
-        :param mcc: antennas should be limited to this mcc
-        :param mnc: antennas should be limited to this mnc
-        :param count_limit: maximum number of antennas to return
-        :param exclude: antenna that should be excluded from the retrieved antennas
-        :return: retrieved antennas within reach from the Point
-        """
         qwhere = list(self._qwhere)
         qargs = list(self._qargs)
 
@@ -240,7 +185,7 @@ class PgCollection(CellCollection):
         count_limit = count_limit if count_limit is not None else self._count_limit
 
         return PgCollection(
-            self._con, qwhere, qargs, qorder, count_limit, self._on_duplicate
+            self._con, self._on_duplicate, qwhere, qargs, qorder, count_limit
         )
 
     def close(self):
@@ -292,10 +237,29 @@ class PgCollection(CellCollection):
 
 
 def csv_import(con, flo, progress: Callable = lambda x: x):
+    """
+    Import antenna data into a Postgres database from a CSV file.
+
+    :param con: an open database connection
+    :param flo: a file like object pointing to CSV data
+    :param progress: an optional progress bar (like tqdm), or `None`
+    """
     create_table(con)
 
-    reader = csv.reader(flo)
-    next(reader)  # skip header
+    fieldnames = [
+        "date_start",
+        "date_end",
+        "radio",
+        "mcc",
+        "mnc",
+        "lac",
+        "ci",
+        "eci",
+        "lon",
+        "lat",
+        "azimuth",
+    ]
+    reader = csv.DictReader(flo, fieldnames=fieldnames)
 
     with con.cursor() as cur:
         for i, row in enumerate(progress(list(reader))):
@@ -312,7 +276,7 @@ def csv_import(con, flo, progress: Callable = lambda x: x):
                     lon,
                     lat,
                     azimuth,
-                ) = [c if c != "" else None for c in row]
+                ) = [row[f] if row[f] != "" else None for f in fieldnames]
                 lon, lat = float(lon), float(lat)
                 assert math.isfinite(lon), f"invalid number for longitude: {lon}"
                 assert math.isfinite(lat), f"invalid number for latitude: {lat}"
@@ -344,6 +308,13 @@ def csv_import(con, flo, progress: Callable = lambda x: x):
 
 
 def csv_export(con, flo):
+    """
+    Export antenna data in a Postgres database to a CSV file.
+
+    :param con: an open database connection
+    :param flo: a file like object where CSV data will be written
+    """
+
     sql_x = "ST_X(rd)"
     sql_y = "ST_Y(rd)"
     sql_lon = f"""

@@ -7,9 +7,6 @@ import geopy.units
 import pyproj
 
 
-GEOD_WGS84 = pyproj.Geod(ellps="WGS84")
-
-
 class Angle:
     """
     Class to represent an angle between two lines. Implements mathematical operators and can work with degrees and
@@ -121,8 +118,8 @@ def azimuth(coord1: geopy.Point, coord2: geopy.Point) -> Angle:
     Calculates the azimuth of the line between two points. That is, the angle between the line from the first point
     northward and the line from the first point to the second.
 
-    @param coord1: the coordinates of the first point
-    @param coord2: the coordinates of the second point
-    @return: the azimuth of the line that connects the first point to the second
+    :param coord1: the coordinates of the first point
+    :param coord2: the coordinates of the second point
+    :return: the azimuth of the line that connects the first point to the second
     """
     return Angle(degrees=azimuth_deg(coord1, coord2))

@@ -6,6 +6,7 @@ information on the actual positions of the cell antennas, as well as other
 meta data. The following assumes you have such a database in a readable CSV
 format.
 
+
 # Import cell database
 
 Install Postgres and Postgis and remember credentials.
@@ -27,6 +28,7 @@ nano celldb.yaml
 python -m telcell.celldb --config celldb.yaml import < celldb.csv
 ```
 
+
 # Usage
 
 ```py
@@ -36,7 +38,7 @@ with script_helper.get_cell_database("celldb.yaml", on_duplicate=duplicate_polic
 
     # retrieve cell info
     my_cell = CellIdentity.create(radio="GSM", mcc=99, mnc=99, eci=123456)
-    cellinfo = db.get(my_cell, date=datetime.datetime.now())
+    cellinfo = db.get(ci=my_cell, date=datetime.datetime.now())
     if cellinfo is None:
         print("cell not found")
     else:
@@ -54,3 +56,21 @@ with script_helper.get_cell_database("celldb.yaml", on_duplicate=duplicate_polic
     for cellinfo in nearby_gsm_cells:
         print(cellinfo)
 ```
+
+
+# Cell database CSV
+
+A cell database file is expected to be comma-separated with the column names
+in the header, and the following columns:
+
+* date_start: a timestamp in ISO format of when the antenna became operational
+* date_end: a timestamp in ISO format of when the antenna was decommissioned
+* radio: the radio technology of the antenna (e.g. GSM, UMTS, LTE, NR)
+* mcc: the Mobile Country Code (MCC)
+* mnc: the Mobile Network Code (MNC)
+* lac: the Location Area Code (LAC), in case of GSM, UMTS
+* ci: the Cell Identity (CI), in case of GSM, UMTS
+* eci: the evolved Cell Identity (eCI), in case of LTE, NR
+* lon: the longitude of the antenna position (WGS84)
+* lat: the latitude of the antenna position (WGS84)
+* azimuth: the transmission direction of the antenna in degrees, relative to north
