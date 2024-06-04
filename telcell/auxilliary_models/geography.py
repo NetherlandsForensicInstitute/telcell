@@ -2,19 +2,25 @@ import math
 import operator
 from typing import List, Optional, Sequence, Tuple, Union
 
+import geopy
 import numpy as np
 import tensorflow as tf
 
-from telcell.data.models import RDPoint
+from telcell.data.models import rd_to_point
 
 
-class GridPoint(RDPoint):
+class GridPoint:
     """
     histo.Point with some extra attributes, that facilitate the point living on a grid.
     """
 
     def __init__(self, rdx: float, rdy: float):
-        super().__init__(x=rdx, y=rdy)
+        self.x = rdx
+        self.y = rdy
+
+    @property
+    def xy(self) -> Tuple[float, float]:
+        return self.x, self.y
 
     def move(self, delta_rdx: float, delta_rdy: float) -> "GridPoint":
         return GridPoint(self.x + delta_rdx, self.y + delta_rdy)
@@ -23,6 +29,9 @@ class GridPoint(RDPoint):
         rdx = round(self.x / resolution) * resolution
         rdy = round(self.y / resolution) * resolution
         return GridPoint(rdx, rdy)
+
+    def as_point(self) -> geopy.Point:
+        return rd_to_point(*self.xy)
 
     def __eq__(self, obj) -> bool:
         return self.x == obj.x and self.y == obj.y
@@ -43,7 +52,7 @@ class Area:
         self.diameter = diameter
         self._southwest = southwest
 
-    def intersect(self, other: 'Area') -> bool:
+    def intersect(self, other: "Area") -> bool:
         """
         Checks if area has an intersection with current area
 
@@ -74,8 +83,13 @@ class Area:
 
 
 class EmptyGrid(Area):
-    def __init__(self, diameter: int, resolution: int, southwest: GridPoint,
-                 cut_out: Optional[Tuple[GridPoint, GridPoint]] = None):
+    def __init__(
+        self,
+        diameter: int,
+        resolution: int,
+        southwest: GridPoint,
+        cut_out: Optional[Tuple[GridPoint, GridPoint]] = None,
+    ):
         super().__init__(diameter, southwest)
         if southwest.x % resolution != 0 or southwest.y % resolution != 0:
             raise ValueError("Southwest point of Grid is not aligned with resolution")
@@ -88,14 +102,10 @@ class EmptyGrid(Area):
         self.cut_out = cut_out
         self.grid_shape = (diameter // resolution, diameter // resolution)
         if self.cut_out:
-            if any(coord % self.resolution != 0 for coord in
-                   self.cut_out[0].xy):
-                raise ValueError(
-                    'Cut out (southwest) is not aligned with resolution')
-            if any(coord % self.resolution != 0 for coord in
-                   self.cut_out[1].xy):
-                raise ValueError(
-                    'Cut out (northwest) is not aligned with resolution')
+            if any(coord % self.resolution != 0 for coord in self.cut_out[0].xy):
+                raise ValueError("Cut out (southwest) is not aligned with resolution")
+            if any(coord % self.resolution != 0 for coord in self.cut_out[1].xy):
+                raise ValueError("Cut out (northwest) is not aligned with resolution")
 
     @property
     def x_coords(self) -> List[int]:
@@ -106,9 +116,13 @@ class EmptyGrid(Area):
         """
         # move to center of the section (hence //2)
         distance_to_center = self.resolution // 2
-        return list(range(int(self.southwest.move(distance_to_center, distance_to_center).x),
-                          int(self.northeast.move(distance_to_center, distance_to_center).x),
-                          self.resolution))
+        return list(
+            range(
+                int(self.southwest.move(distance_to_center, distance_to_center).x),
+                int(self.northeast.move(distance_to_center, distance_to_center).x),
+                self.resolution,
+            )
+        )
 
     @property
     def y_coords(self) -> List[int]:
@@ -119,11 +133,15 @@ class EmptyGrid(Area):
         """
         # move to center of the section (hence //2)
         distance_to_center = self.resolution // 2
-        return list(range(int(self.southwest.move(distance_to_center, distance_to_center).y),
-                          int(self.northeast.move(distance_to_center, distance_to_center).y),
-                          self.resolution))
+        return list(
+            range(
+                int(self.southwest.move(distance_to_center, distance_to_center).y),
+                int(self.northeast.move(distance_to_center, distance_to_center).y),
+                self.resolution,
+            )
+        )
 
-    def coords_mesh_grid(self, mode: str = 'np'):
+    def coords_mesh_grid(self, mode: str = "np"):
         """
         Mesh values of x and y coordinates.
         Tuple of arrays with all x and y coordinates.
@@ -133,12 +151,12 @@ class EmptyGrid(Area):
         :return: Array with x coordinates (either array or tensor),
             Array with y coordinates (either array or tensor)
         """
-        if mode == 'np':
+        if mode == "np":
             return np.meshgrid(self.x_coords, self.y_coords)
-        elif mode == 'tf':
+        elif mode == "tf":
             return tf.meshgrid(self.x_coords, self.y_coords)
 
-    def move(self, southwest: GridPoint) -> 'EmptyGrid':
+    def move(self, southwest: GridPoint) -> "EmptyGrid":
         """
         Moves anchor (southwest) point of the values to a new (southwest) location, copying
         values for overlapping sections.
@@ -148,32 +166,50 @@ class EmptyGrid(Area):
         """
         return EmptyGrid(self.diameter, self.resolution, southwest, self.cut_out)
 
-    def zeros(self) -> 'Grid':
+    def zeros(self) -> "Grid":
         """
         Sets all values to zero for the sections of the EmptyGrid, returning a Grid
 
         :return: A Grid with the same properties but all values set to 0
         """
-        return Grid(self.diameter, self.resolution, self.southwest, np.zeros(self.grid_shape), self.cut_out)
+        return Grid(
+            self.diameter,
+            self.resolution,
+            self.southwest,
+            np.zeros(self.grid_shape),
+            self.cut_out,
+        )
 
     def __repr__(self) -> str:
         return f"EmptyGrid({self.southwest},{self.northeast})"
 
     def __hash__(self):
         if self.cut_out:
-            return hash((self.diameter, self.southwest, self.resolution,
-                         self.cut_out[0], self.cut_out[1]))
+            return hash(
+                (
+                    self.diameter,
+                    self.southwest,
+                    self.resolution,
+                    self.cut_out[0],
+                    self.cut_out[1],
+                )
+            )
         else:
             return hash((self.diameter, self.southwest, self.resolution))
 
 
 class Grid(EmptyGrid):
-    def __init__(self, diameter: int, resolution: int, southwest: GridPoint,
-                 values: Optional[np.ndarray] = None,
-                 cut_out: Optional[Tuple[GridPoint, GridPoint]] = None):
+    def __init__(
+        self,
+        diameter: int,
+        resolution: int,
+        southwest: GridPoint,
+        values: Optional[np.ndarray] = None,
+        cut_out: Optional[Tuple[GridPoint, GridPoint]] = None,
+    ):
         super().__init__(diameter, resolution, southwest, cut_out)
         if self.grid_shape != values.shape:
-            raise ValueError('Shape of array is incompatible with shape of Grid')
+            raise ValueError("Shape of array is incompatible with shape of Grid")
 
         if cut_out:
             # Failsafe
@@ -191,7 +227,7 @@ class Grid(EmptyGrid):
         """
         return self._values
 
-    def get_empty_grid(self) -> 'EmptyGrid':
+    def get_empty_grid(self) -> "EmptyGrid":
         """
         Return a new EmptyGrid with the values removed from this Grid instance.
 
@@ -206,8 +242,9 @@ class Grid(EmptyGrid):
         :param point: point within Grid
         :return: value
         """
-        if not (self.northeast.x > point.x > self.southwest.x) \
-                or not (self.northeast.y > point.y > self.southwest.y):
+        if not (self.northeast.x > point.x > self.southwest.x) or not (
+            self.northeast.y > point.y > self.southwest.y
+        ):
             raise ValueError(f"Point {point} is not within a section of Grid {self}")
 
         x_center = min(self.x_coords, key=lambda x: abs(x - point.x))
@@ -228,21 +265,24 @@ class Grid(EmptyGrid):
         row_offset, column_offset = point_offset(self, point)
         return self.values[row_offset, column_offset]
 
-    def _check_alignment(self, other: 'Grid') -> bool:
+    def _check_alignment(self, other: "Grid") -> bool:
         """
         Checks if Grids are aligned
 
         :param other: Grid
         :return: True if aligned
         """
-        if self.southwest != other.southwest or self.diameter != other.diameter or \
-                self.resolution != other.resolution or \
-                self.diameter != other.diameter:
+        if (
+            self.southwest != other.southwest
+            or self.diameter != other.diameter
+            or self.resolution != other.resolution
+            or self.diameter != other.diameter
+        ):
             return False
         else:
             return True
 
-    def move(self, southwest: GridPoint) -> 'Grid':
+    def move(self, southwest: GridPoint) -> "Grid":
         """
         Moves anchor (southwest) point of the values to a new (southwest) location, copying
         values for overlapping sections.
@@ -266,7 +306,7 @@ class Grid(EmptyGrid):
         return float(np.nansum(self.values))
 
     @staticmethod
-    def sum_all(*grids: 'Grid') -> 'Grid':
+    def sum_all(*grids: "Grid") -> "Grid":
         """
         Summing the values of a sequence of grids (element-wise).
         Speed up over:
@@ -284,9 +324,15 @@ class Grid(EmptyGrid):
 
         values = np.sum(np.stack([g.values for g in grids], axis=-1), axis=2)
 
-        return Grid(ref_grid.diameter, ref_grid.resolution, ref_grid.southwest, values, ref_grid.cut_out)
+        return Grid(
+            ref_grid.diameter,
+            ref_grid.resolution,
+            ref_grid.southwest,
+            values,
+            ref_grid.cut_out,
+        )
 
-    def normalize(self, sum_value: float = 1.) -> 'Grid':
+    def normalize(self, sum_value: float = 1.0) -> "Grid":
         """
         Normalize values within sections, in order that they sum to a given value
 
@@ -294,16 +340,23 @@ class Grid(EmptyGrid):
         """
         return self.scale_grid_values(sum_value / self.sum())
 
-    def scale_grid_values(self, constant: float) -> 'Grid':
+    def scale_grid_values(self, constant: float) -> "Grid":
         """
         Multiplies values of the grid with
         a specific (constant) value
         :param constant: factor that is used to multiply values with
         """
-        return Grid(self.diameter, self.resolution, self.southwest,
-                    self.values * constant, self.cut_out)
+        return Grid(
+            self.diameter,
+            self.resolution,
+            self.southwest,
+            self.values * constant,
+            self.cut_out,
+        )
 
-    def _copy_intersection(self, base_array: np.ndarray, base_grid: EmptyGrid, source_grid: "Grid") -> np.ndarray:
+    def _copy_intersection(
+        self, base_array: np.ndarray, base_grid: EmptyGrid, source_grid: "Grid"
+    ) -> np.ndarray:
         """
         Copy values from the source values to the base values for sections that intersect
 
@@ -324,35 +377,36 @@ class Grid(EmptyGrid):
 
         # place new values on overlapping sections of the base values
         base_array = set_values_on_array(
-            base_array, base_grid, (sw_intersection, ne_intersection), cropped_grid)
+            base_array, base_grid, (sw_intersection, ne_intersection), cropped_grid
+        )
 
         return base_array
 
-    def __add__(self, other: Union['Grid', float]) -> 'Grid':
+    def __add__(self, other: Union["Grid", float]) -> "Grid":
         """
         see `._operate_grids`
         """
         return self._operate_grids(other, operator.add)
 
-    def __sub__(self, other: Union['Grid', float]) -> 'Grid':
+    def __sub__(self, other: Union["Grid", float]) -> "Grid":
         """
         see `._operate_grids`
         """
         return self._operate_grids(other, operator.sub)
 
-    def __mul__(self, other: Union['Grid', float]) -> 'Grid':
+    def __mul__(self, other: Union["Grid", float]) -> "Grid":
         """
         see `._operate_grids`
         """
         return self._operate_grids(other, operator.mul)
 
-    def __truediv__(self, other: Union['Grid', float]) -> 'Grid':
+    def __truediv__(self, other: Union["Grid", float]) -> "Grid":
         """
         see `._operate_grids`
         """
         return self._operate_grids(other, operator.truediv)
 
-    def _operate_grids(self, other: Union['Grid', float], op: operator) -> 'Grid':
+    def _operate_grids(self, other: Union["Grid", float], op: operator) -> "Grid":
         """
         Applies operator between Grid and `other`
         If other is an aligned Grid, the operation is applied on the inner and outer grids
@@ -371,9 +425,16 @@ class Grid(EmptyGrid):
                 raise ValueError("Grids are not aligned")
             other = other.values
         elif not isinstance(other, (float, int)):
-            raise AssertionError(f'Invalid type ({type(other)}) for operation {op} with Grid')
-        return Grid(self.diameter, self.resolution, self.southwest,
-                    op(self.values, other), self.cut_out)
+            raise AssertionError(
+                f"Invalid type ({type(other)}) for operation {op} with Grid"
+            )
+        return Grid(
+            self.diameter,
+            self.resolution,
+            self.southwest,
+            op(self.values, other),
+            self.cut_out,
+        )
 
     def __iter__(self) -> Tuple[float, GridPoint]:
         """
@@ -382,15 +443,18 @@ class Grid(EmptyGrid):
         distance_to_center = self.resolution // 2
         for (r, c), prob in np.ndenumerate(self._values):
             if not np.isnan(prob):
-                yield prob, self.southwest.move(r * self.resolution + distance_to_center,
-                                                c * self.resolution + distance_to_center)
+                yield prob, self.southwest.move(
+                    r * self.resolution + distance_to_center,
+                    c * self.resolution + distance_to_center,
+                )
 
     def __repr__(self) -> str:
         return f"Grid({self.southwest},{self.northeast})"
 
 
-def grids_intersection(grid_a: Area, grid_b: Area) -> \
-        Tuple[Optional[GridPoint], Optional[GridPoint]]:
+def grids_intersection(
+    grid_a: Area, grid_b: Area
+) -> Tuple[Optional[GridPoint], Optional[GridPoint]]:
     """
     Determine sw and ne points of intersection of two grids or areas. If no intersection is present,
     None is returned for both points
@@ -399,10 +463,14 @@ def grids_intersection(grid_a: Area, grid_b: Area) -> \
     :param grid_b: Grid or Area used to determine intersection
     :return: sw intersection point, ne intersection point
     """
-    sw_intersection = GridPoint(max([grid_a.southwest.x, grid_b.southwest.x]),
-                                max([grid_a.southwest.y, grid_b.southwest.y]))
-    ne_intersection = GridPoint(min([grid_a.northeast.x, grid_b.northeast.x]),
-                                min([grid_a.northeast.y, grid_b.northeast.y]))
+    sw_intersection = GridPoint(
+        max([grid_a.southwest.x, grid_b.southwest.x]),
+        max([grid_a.southwest.y, grid_b.southwest.y]),
+    )
+    ne_intersection = GridPoint(
+        min([grid_a.northeast.x, grid_b.northeast.x]),
+        min([grid_a.northeast.y, grid_b.northeast.y]),
+    )
     if sw_intersection.x >= ne_intersection.x or sw_intersection.y >= ne_intersection.y:
         return None, None
     return sw_intersection, ne_intersection
@@ -416,9 +484,9 @@ def point_offset(grid: Grid, point: GridPoint) -> Tuple[int, int]:
     :param point: point for which offset should be determined
     :return: row offset within values, column offset within values
     """
-    return \
-        int((point.y - grid.southwest.y) // grid.resolution), \
-        int((point.x - grid.southwest.x) // grid.resolution)
+    return int((point.y - grid.southwest.y) // grid.resolution), int(
+        (point.x - grid.southwest.x) // grid.resolution
+    )
 
 
 def crop_grid(grid: Grid, points: Sequence[GridPoint]) -> np.ndarray:
@@ -433,7 +501,9 @@ def crop_grid(grid: Grid, points: Sequence[GridPoint]) -> np.ndarray:
     return grid.values[row_start:row_end, column_start:column_end]
 
 
-def set_values_on_array(array: np.ndarray, grid: EmptyGrid, points: Sequence[GridPoint], vals) -> np.ndarray:
+def set_values_on_array(
+    array: np.ndarray, grid: EmptyGrid, points: Sequence[GridPoint], vals
+) -> np.ndarray:
     """
     Updates crop of values according to points and returns full array
     with vals insert on crop
@@ -450,7 +520,9 @@ def set_values_on_array(array: np.ndarray, grid: EmptyGrid, points: Sequence[Gri
     return new_array
 
 
-def _extract_crop_offsets(grid: EmptyGrid, points: Sequence[GridPoint]) -> Tuple[int, int, int, int]:
+def _extract_crop_offsets(
+    grid: EmptyGrid, points: Sequence[GridPoint]
+) -> Tuple[int, int, int, int]:
     """
     Computes offsets for set of points for a given values, to index its corresponding crop
 
@@ -505,9 +577,13 @@ class AreaSize:
 
     def __init__(self, radius: Optional[int] = None, diameter: Optional[int] = None):
         if not radius and not diameter:
-            raise ValueError("You cannot create an AreaSize without either a radius or a diameter")
+            raise ValueError(
+                "You cannot create an AreaSize without either a radius or a diameter"
+            )
         if radius and diameter and radius != 2 * diameter:
-            raise ValueError(f"Both radius and diameter specified for AreaSize; radius must be 2x diameter"
-                             f"but this is not the case (radius: {radius} and diameter: {diameter})")
+            raise ValueError(
+                f"Both radius and diameter specified for AreaSize; radius must be 2x diameter"
+                f"but this is not the case (radius: {radius} and diameter: {diameter})"
+            )
         self.radius = radius or int(diameter // 2)
         self.diameter = diameter or radius * 2
