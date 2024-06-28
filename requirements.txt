@@ -1,9 +1,11 @@
+geopy
 lir
 lrbenchmark>=0.1.2
 numpy
 pydeck
 scikit-learn
 streamlit
+psycopg2-binary
 pyproj
 tensorflow~=2.13.0
 confidence
