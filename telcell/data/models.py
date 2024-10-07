@@ -1,12 +1,12 @@
 from __future__ import annotations
-import math
 import warnings
 from dataclasses import dataclass
 from datetime import datetime
 from functools import cached_property
-from typing import Any, Mapping, Tuple, Sequence, Iterator, Union
+from typing import Any, Mapping, Tuple, Sequence, Iterator, Optional
 
 import geopy
+import geopy.distance
 import pyproj
 from pyproj import Proj, Geod, Transformer
 
@@ -38,7 +38,14 @@ def approximately_equal(first, second, tolerance=0.0001):
     return abs(first - second) < tolerance
 
 
-def rd_to_point(x: int, y: int) -> geopy.Point:
+def rd_to_point(x: float, y: float) -> geopy.Point:
+    """
+    Converts an x y tuple of Rijksdriehoek coordinates to a `geopy.Point` object.
+
+    @param x: the x value
+    @param y: the y value
+    @return: a `geopy.Point` object
+    """
     if not (RD_Y_RANGE[0] <= y <= RD_Y_RANGE[1]) or not (
         RD_X_RANGE[0] <= x <= RD_X_RANGE[1]
     ):
@@ -49,85 +56,14 @@ def rd_to_point(x: int, y: int) -> geopy.Point:
     return geopy.Point(longitude=c[0], latitude=c[1])
 
 
-def point_to_rd(point: geopy.Point) -> Tuple[int, int]:
+def point_to_rd(point: geopy.Point) -> Tuple[float, float]:
+    """
+    Converts a `geopy.Point` object to an x, y tuple of Rijksdriehoek coordinates.
+
+    @param point: the point
+    @return: an x y tuple
+    """
     return WGS84_TO_RD.transform(point.longitude, point.latitude)
-
-
-@dataclass(frozen=True)
-class RDPoint:
-    x: float
-    y: float
-
-    def __post_init__(self):
-        if (
-            self.x < RD_X_RANGE[0]
-            or self.x > RD_X_RANGE[1]
-            or self.y < RD_Y_RANGE[0]
-            or self.y > RD_Y_RANGE[1]
-        ):
-            raise ValueError(
-                f"Invalid rijksdriehoek coordinates: ({self.x=}, {self.y=}); "
-                f"allowed range: x={RD_X_RANGE}, y={RD_Y_RANGE}."
-            )
-
-    @property
-    def xy(self) -> Tuple[float, float]:
-        return self.x, self.y
-
-    def convert_to_wgs84(self) -> Point:
-        lon, lat = RD_TO_WGS84.transform(self.x, self.y)
-        return Point(lat=lat, lon=lon)
-
-    def distance(self, other: Union[RDPoint, Point]) -> float:
-        other_rd = other.convert_to_rd() if isinstance(other, Point) else other
-        return math.sqrt(
-            math.pow(self.x - other_rd.x, 2) + math.pow(self.y - other_rd.y, 2)
-        )
-
-    def approx_equal(
-        self, other: Union[RDPoint, Point], tolerance_m: float = 1
-    ) -> bool:
-        return self.distance(other) < tolerance_m
-
-    def __repr__(self):
-        return f"RDPoint(x={self.x}, y={self.y})"
-
-
-@dataclass(frozen=True)
-class Point:
-    lat: float
-    lon: float
-
-    def __post_init__(self):
-        if self.lat < -90 or self.lat > 90 or self.lon < -180 or self.lon > 180:
-            raise ValueError(f"Invalid wgs84 coordinates: ({self.lat=}, {self.lon=}).")
-
-    @property
-    def latlon(self) -> Tuple[float, float]:
-        return self.lat, self.lon
-
-    def convert_to_rd(self) -> RDPoint:
-        x, y = WGS84_TO_RD.transform(self.lon, self.lat)
-        return RDPoint(x=x, y=y)
-
-    def distance(self, other: Union[RDPoint, Point]) -> float:
-        self_rd = self.convert_to_rd()
-        other_rd = other.convert_to_rd() if isinstance(other, Point) else other
-        return math.sqrt(
-            math.pow(self_rd.x - other_rd.x, 2) + math.pow(self_rd.y - other_rd.y, 2)
-        )
-
-    def approx_equal(self, other: Union[RDPoint, Point], tolerance_m: int = 1) -> bool:
-        return self.distance(other) < tolerance_m
-
-    def __eq__(self, other):
-        if isinstance(other, Point):
-            return (self.lat == other.lat) and (self.lon == other.lon)
-        else:
-            return False
-
-    def __repr__(self):
-        return f"Point(lat={self.lat}, lon={self.lon})"
 
 
 @dataclass(eq=True, frozen=True)
@@ -142,25 +78,25 @@ class Measurement:
             uncertainty of the measured WGS84 coordinates.
     """
 
-    coords: Point
-    timestamp: datetime
+    coords: geopy.Point
+    timestamp: Optional[datetime]
     extra: Mapping[str, Any]
 
     @property
     def lat(self):
-        return self.coords.lat
+        return self.coords.latitude
 
     @property
     def lon(self):
-        return self.coords.lon
+        return self.coords.longitude
 
     @property
-    def latlon(self):
-        return self.coords.latlon
+    def latlon(self) -> Tuple[float, float]:
+        return self.lat, self.lon
 
     @property
     def xy(self) -> Tuple[float, float]:
-        return self.coords.convert_to_rd().xy
+        return point_to_rd(self.coords)
 
     def __str__(self):
         return f"<{self.timestamp}: ({self.lat}, {self.lon})>"
@@ -217,7 +153,12 @@ class MeasurementPair:
     def distance(self):
         """Calculate the distance (in meters) between the two measurements of
         the pair."""
-        return self.measurement_a.coords.distance(self.measurement_b.coords)
+        return (
+            geopy.distance.geodesic(
+                self.measurement_a.coords, self.measurement_b.coords
+            ).km
+            * 1000
+        )
 
     def __str__(self):
         return f"<{self.measurement_a}, ({self.measurement_b})>"
