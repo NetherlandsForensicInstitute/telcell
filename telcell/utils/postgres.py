@@ -9,7 +9,7 @@ DEFAULT_SEARCH_PATH = ["public", "contrib"]
 
 
 def pgconnect(
-    credentials: Mapping,
+    credentials: Mapping[str, str],
     schema: Optional[str] = None,
     use_wrapper: bool = True,
     statement_timeout=None,
