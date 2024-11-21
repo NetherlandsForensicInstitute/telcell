@@ -57,16 +57,16 @@ class CellIdentity:
             return NRCell(mcc, mnc, eci)
         elif radio is not None:
             raise ValueError(f"unsupported radio technology: {radio}")
-        elif eci is not None and (ci is None or lac is None):
-            # we have `eci` but not `lac`, `ci` --> guess LTE/NR
+        elif eci is not None:  # we have: `eci`; missing: `radio`
+            if ci is not None or lac is not None:
+                raise ValueError("either `ci` or `eci` should be provided, but not both")
+            # guess LTE/NR
             return EutranCellGlobalIdentity(mcc, mnc, eci)
-        elif ci is not None and lac is not None and eci is None:
-            # we have `lac` and `ci` but not `eci` --> guess GSM/UMTS
+        elif ci is not None or lac is not None:  # we have: `ci` or `lac`; missing: `radio`, `eci`
+            # guess GSM/UMTS
             return CellGlobalIdentity(mcc, mnc, lac, ci)
-        elif eci is None and lac is None and ci is None:
+        else:  # missing: `radio`, `eci`, `ci`, `lac`
             return CellIdentity(mcc, mnc)  # guess it's a cell
-        else:
-            raise ValueError("either `ci` or `eci` should be provided, but not both")
 
     @staticmethod
     def parse(cell_identity: str) -> "CellIdentity":
