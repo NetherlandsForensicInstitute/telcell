@@ -147,11 +147,13 @@ class PgCollection(CellCollection):
         qargs = list(self._qargs)
 
         if coords is not None and distance_limit_m is None and count_limit is None:
-            raise ValueError(f"coords argument requires either distance_limit or count_limit")
+            raise ValueError(
+                "coords argument requires either distance_limit or count_limit"
+            )
 
         if distance_limit_m is not None:
             if coords is None:
-                raise ValueError(f"distance_limit argument requires coords")
+                raise ValueError("distance_limit argument requires coords")
 
             x, y = point_to_rd(coords)
             qwhere.append(
@@ -183,10 +185,10 @@ class PgCollection(CellCollection):
                 qargs.extend(radio)
 
             if mcc is not None:
-                qwhere.append(f"mcc = %s")
+                qwhere.append("mcc = %s")
                 qargs.append(mcc)
             if mnc is not None:
-                qwhere.append(f"mnc = %s")
+                qwhere.append("mnc = %s")
                 qargs.append(mnc)
 
         if exclude is not None:
