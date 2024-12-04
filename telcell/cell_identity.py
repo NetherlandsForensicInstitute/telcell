@@ -51,22 +51,30 @@ class CellIdentity:
         elif radio is not None:
             radio = str(radio).upper()
 
+        def assert_none(value, argname, reason):
+            if value is not None:
+                raise ValueError(f"illegal argument `{argname}` for {reason}")
+
         if radio == Radio.GSM.value:
+            assert_none(eci, "eci", radio)
             return GSMCell(mcc, mnc, lac, ci)
         elif radio == Radio.UMTS.value:
+            assert_none(eci, "eci", radio)
             return UMTSCell(mcc, mnc, lac, ci)
         elif radio == Radio.LTE.value:
+            assert_none(lac, "lac", radio)
+            assert_none(ci, "ci", radio)
             return LTECell(mcc, mnc, eci)
         elif radio == Radio.NR.value:
+            assert_none(lac, "lac", radio)
+            assert_none(ci, "ci", radio)
             return NRCell(mcc, mnc, eci)
         elif radio is not None:
             raise ValueError(f"unsupported radio technology: {radio}")
         elif eci is not None:  # we have: `eci`; missing: `radio`
-            if ci is not None or lac is not None:
-                raise ValueError(
-                    "either `lac`/`ci` or `eci` should be provided, but not both"
-                )
             # guess LTE/NR
+            assert_none(lac, "lac", "`eci` is provided")
+            assert_none(ci, "ci", "`eci` is provided")
             return EutranCellGlobalIdentity(mcc, mnc, eci)
         elif (
             ci is not None or lac is not None
