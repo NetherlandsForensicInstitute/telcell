@@ -146,7 +146,7 @@ class PgCollection(CellCollection):
         qwhere = list(self._qwhere)
         qargs = list(self._qargs)
 
-        if coords is not None and distance_limit_m is None and count_limit is None:
+        if coords and distance_limit_m is None and count_limit is None:
             raise ValueError(
                 "coords argument requires either distance_limit or count_limit"
             )
@@ -164,32 +164,28 @@ class PgCollection(CellCollection):
                     f"NOT ST_DWithin(rd, 'SRID=4326;POINT({x} {y})', {distance_lower_limit_m})"
                 )
 
-        if date is not None:
+        if date:
             qwhere.append("(date_start is NULL OR %s >= date_start)")
             qwhere.append("(date_end is NULL OR %s < date_end)")
             qargs.extend([date, date])
 
-        if ci is not None:
+        if ci:
             add_qwhere, add_qargs = _build_cell_identity_query(ci)
             qwhere.append(add_qwhere)
             qargs.extend(add_qargs)
 
-            assert radio is None, "radio argument makes no sense in combination with ci"
-            assert mcc is None, "mcc argument makes no sense in combination with ci"
-            assert mnc is None, "mnc argument makes no sense in combination with ci"
-        else:
-            if radio is not None:
-                if isinstance(radio, str):
-                    radio = [radio]
-                qwhere.append(f"({' OR '.join(['radio = %s'])})")
-                qargs.extend(radio)
+        if radio is not None:
+            if isinstance(radio, str):
+                radio = [radio]
+            qwhere.append(f"({' OR '.join(['radio = %s'])})")
+            qargs.extend(radio)
 
-            if mcc is not None:
-                qwhere.append("mcc = %s")
-                qargs.append(mcc)
-            if mnc is not None:
-                qwhere.append("mnc = %s")
-                qargs.append(mnc)
+        if mcc is not None:
+            qwhere.append("mcc = %s")
+            qargs.append(mcc)
+        if mnc is not None:
+            qwhere.append("mnc = %s")
+            qargs.append(mnc)
 
         if exclude is not None:
             if isinstance(exclude, CellIdentity):
