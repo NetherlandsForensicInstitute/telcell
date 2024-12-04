@@ -41,7 +41,7 @@ def _build_antenna(row: Tuple) -> Properties:
 
 
 def _build_cell_identity_query(ci):
-    if ci is not None and not isinstance(ci, CellIdentity):
+    if not isinstance(ci, CellIdentity):
         raise ValueError(f"ci expected to be CellIdentity; found: {type(ci)}")
 
     qwhere = []
