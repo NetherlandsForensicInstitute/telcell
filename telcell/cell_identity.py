@@ -10,7 +10,8 @@ class Radio(Enum):
     NR = "NR"
 
 
-CELL_IDENTITY_PATTERN = re.compile(r"""
+CELL_IDENTITY_PATTERN = re.compile(
+    r"""
     ^
     ((?P<radio>[a-zA-Z]+)/)?
     (?P<mcc>[0-9]+|\?)
@@ -20,7 +21,9 @@ CELL_IDENTITY_PATTERN = re.compile(r"""
         -(?P<ci>[0-9]+|\?)|(?P<eci>[0-9]+|\?)
     ))?
     $
-""", re.VERBOSE)
+""",
+    re.VERBOSE,
+)
 
 
 class CellIdentity:
@@ -33,14 +36,15 @@ class CellIdentity:
     """
 
     @staticmethod
-    def create(*,
-               radio: Optional[Union[Radio, str]] = None,
-               mcc: Optional[int] = None,
-               mnc: Optional[int] = None,
-               lac: Optional[int] = None,
-               ci: Optional[int] = None,
-               eci: Optional[int] = None,
-               ) -> "CellIdentity":
+    def create(
+        *,
+        radio: Optional[Union[Radio, str]] = None,
+        mcc: Optional[int] = None,
+        mnc: Optional[int] = None,
+        lac: Optional[int] = None,
+        ci: Optional[int] = None,
+        eci: Optional[int] = None,
+    ) -> "CellIdentity":
 
         if isinstance(radio, Radio):
             radio = radio.value
@@ -57,16 +61,20 @@ class CellIdentity:
             return NRCell(mcc, mnc, eci)
         elif radio is not None:
             raise ValueError(f"unsupported radio technology: {radio}")
-        elif eci is not None and (ci is None or lac is None):
-            # we have `eci` but not `lac`, `ci` --> guess LTE/NR
+        elif eci is not None:  # we have: `eci`; missing: `radio`
+            if ci is not None or lac is not None:
+                raise ValueError(
+                    "either `lac`/`ci` or `eci` should be provided, but not both"
+                )
+            # guess LTE/NR
             return EutranCellGlobalIdentity(mcc, mnc, eci)
-        elif ci is not None and lac is not None and eci is None:
-            # we have `lac` and `ci` but not `eci` --> guess GSM/UMTS
+        elif (
+            ci is not None or lac is not None
+        ):  # we have: `ci` or `lac`; missing: `radio`, `eci`
+            # guess GSM/UMTS
             return CellGlobalIdentity(mcc, mnc, lac, ci)
-        elif eci is None and lac is None and ci is None:
+        else:  # missing: `radio`, `eci`, `ci`, `lac`
             return CellIdentity(mcc, mnc)  # guess it's a cell
-        else:
-            raise ValueError("either `ci` or `eci` should be provided, but not both")
 
     @staticmethod
     def parse(cell_identity: str) -> "CellIdentity":
@@ -97,7 +105,9 @@ class CellIdentity:
             else:
                 return int(value)
 
-        groups = {key: convert_value(key, value) for key, value in m.groupdict().items()}
+        groups = {
+            key: convert_value(key, value) for key, value in m.groupdict().items()
+        }
         return CellIdentity.create(**groups)
 
     def __init__(self, mcc: Optional[int], mnc: Optional[int]):
@@ -145,10 +155,10 @@ class CellIdentity:
 
     def __eq__(self, other):
         return (
-                isinstance(other, CellIdentity)
-                and self.radio == other.radio
-                and self.mcc == other.mcc
-                and self.mnc == other.mnc
+            isinstance(other, CellIdentity)
+            and self.radio == other.radio
+            and self.mcc == other.mcc
+            and self.mnc == other.mnc
         )
 
     def __repr__(self) -> str:
@@ -207,10 +217,10 @@ class CellGlobalIdentity(CellIdentity):
 
     def __eq__(self, other):
         return (
-                isinstance(other, CellGlobalIdentity)
-                and super().__eq__(other)
-                and self.lac == other.lac
-                and self.ci == other.ci
+            isinstance(other, CellGlobalIdentity)
+            and super().__eq__(other)
+            and self.lac == other.lac
+            and self.ci == other.ci
         )
 
 
@@ -288,9 +298,9 @@ class EutranCellGlobalIdentity(CellIdentity):
 
     def __eq__(self, other):
         return (
-                isinstance(other, EutranCellGlobalIdentity)
-                and super().__eq__(other)
-                and self.eci == other.eci
+            isinstance(other, EutranCellGlobalIdentity)
+            and super().__eq__(other)
+            and self.eci == other.eci
         )
 
 
