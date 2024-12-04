@@ -41,7 +41,7 @@ def _build_antenna(row: Tuple) -> Properties:
 
 
 def _build_cell_identity_query(ci):
-    if ci is not None and not isinstance(ci, CellIdentity):
+    if not isinstance(ci, CellIdentity):
         raise ValueError(f"ci expected to be CellIdentity; found: {type(ci)}")
 
     qwhere = []
@@ -146,12 +146,14 @@ class PgCollection(CellCollection):
         qwhere = list(self._qwhere)
         qargs = list(self._qargs)
 
-        if coords is not None and distance_limit_m is None and count_limit is None:
-            raise ValueError(f"coords argument requires either distance_limit or count_limit")
+        if coords and distance_limit_m is None and count_limit is None:
+            raise ValueError(
+                "coords argument requires either distance_limit or count_limit"
+            )
 
         if distance_limit_m is not None:
             if coords is None:
-                raise ValueError(f"distance_limit argument requires coords")
+                raise ValueError("distance_limit argument requires coords")
 
             x, y = point_to_rd(coords)
             qwhere.append(
@@ -162,32 +164,28 @@ class PgCollection(CellCollection):
                     f"NOT ST_DWithin(rd, 'SRID=4326;POINT({x} {y})', {distance_lower_limit_m})"
                 )
 
-        if date is not None:
+        if date:
             qwhere.append("(date_start is NULL OR %s >= date_start)")
             qwhere.append("(date_end is NULL OR %s < date_end)")
             qargs.extend([date, date])
 
-        if ci is not None:
+        if ci:
             add_qwhere, add_qargs = _build_cell_identity_query(ci)
             qwhere.append(add_qwhere)
             qargs.extend(add_qargs)
 
-            assert radio is None, "radio argument makes no sense in combination with ci"
-            assert mcc is None, "mcc argument makes no sense in combination with ci"
-            assert mnc is None, "mnc argument makes no sense in combination with ci"
-        else:
-            if radio is not None:
-                if isinstance(radio, str):
-                    radio = [radio]
-                qwhere.append(f"({' OR '.join(['radio = %s'])})")
-                qargs.extend(radio)
+        if radio is not None:
+            if isinstance(radio, str):
+                radio = [radio]
+            qwhere.append(f"({' OR '.join(['radio = %s'])})")
+            qargs.extend(radio)
 
-            if mcc is not None:
-                qwhere.append(f"mcc = %s")
-                qargs.append(mcc)
-            if mnc is not None:
-                qwhere.append(f"mnc = %s")
-                qargs.append(mnc)
+        if mcc is not None:
+            qwhere.append("mcc = %s")
+            qargs.append(mcc)
+        if mnc is not None:
+            qwhere.append("mnc = %s")
+            qargs.append(mnc)
 
         if exclude is not None:
             if isinstance(exclude, CellIdentity):
