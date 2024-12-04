@@ -28,10 +28,17 @@ def test_operators():
         assert hash(ci1) != hash(ci2)
 
 
-def test_ci():
-    with pytest.raises(ValueError):
-        CellIdentity.parse("aardbei")
-    with pytest.raises(ValueError):
-        CellIdentity.parse("1-2-3-4-5")
-    with pytest.raises(ValueError):
-        CellIdentity.parse("NONE/1-2-3-4")
+@pytest.mark.parametrize(
+    "spec",
+    [
+        pytest.param("aardbei"),
+        pytest.param("1-2-3-4-5"),
+        pytest.param("NONE/1-2-3-4"),
+        pytest.param("UMTS/1-2-3"),
+        pytest.param("LTE/1-2-3-4"),
+        pytest.param("LTE/1-2-3-4-5"),
+    ],
+)
+def test_malformed(spec):
+    with pytest.raises(ValueError) as e:
+        CellIdentity.parse(spec)
