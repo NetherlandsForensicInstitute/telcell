@@ -13,7 +13,7 @@ from telcell.cell_identity import (
     Radio,
 )
 from telcell.celldb import CellCollection
-from telcell.celldb.cell_collection import Properties
+from telcell.celldb.models import CellInfo
 
 
 def _ci_to_dict(cell: CellIdentity) -> dict[str, str | int]:
@@ -48,7 +48,7 @@ class GoogleGeolocationService(CellCollection):
         else:
             self._session = requests_cache.CachedSession(cache_name)
 
-    def get(self, date: datetime.datetime, cell: CellIdentity) -> Properties:
+    def get(self, date: datetime.datetime, cell: CellIdentity) -> CellInfo:
         if cell.radio is None and isinstance(cell, EutranCellGlobalIdentity):
             info = self.get(date, CellIdentity.parse(f"{Radio.LTE.value}/{cell}"))
             if info is None:
@@ -72,7 +72,7 @@ class GoogleGeolocationService(CellCollection):
         )
         accuracy = res["accuracy"]
 
-        return Properties(cell=cell, wgs84=point, accuracy=accuracy)
+        return CellInfo(cell=cell, wgs84=point, accuracy_m=accuracy)
 
     def search(
         self,

@@ -106,6 +106,8 @@ def normalize_angle(angle: Angle) -> Angle:
 
 
 def azimuth_deg(coord1: geopy.Point, coord2: geopy.Point) -> float:
+    assert isinstance(coord1, geopy.Point), f"argument 1: expected geopy.Point; found {type(coord1)}"
+    assert isinstance(coord2, geopy.Point), f"argument 2: expected geopy.Point; found {type(coord2)}"
     geodesic = pyproj.Geod(ellps="WGS84")
     fwd_azimuth, back_azimuth, distance = geodesic.inv(
         coord1.longitude, coord1.latitude, coord2.longitude, coord2.latitude

@@ -10,6 +10,7 @@ from telcell.auxilliary_models.rare_pair.coverage_model import (
 )
 from telcell.auxilliary_models.rare_pair.predictor import Predictor
 from telcell.auxilliary_models.rare_pair.utils import DISTANCE_STEP
+from telcell.cell_identity import CellIdentity
 from telcell.data.models import Measurement
 
 
@@ -17,7 +18,7 @@ def test_angle_distance_coverage_model():
     test_measurement = Measurement(
         geopy.Point(latitude=52.0449566305567, longitude=4.3585472613577965),
         datetime.strptime("2023-01-01", "%Y-%m-%d"),
-        {"mnc": 4, "azimuth": 0},
+        {"cell": CellIdentity.create(mnc=4), "azimuth": 0},
     )
 
     clf = DecisionTreeClassifier()

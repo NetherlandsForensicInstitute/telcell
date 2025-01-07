@@ -90,9 +90,9 @@ def parse_coverage_data_csv(path: Union[str, Path]) -> List[CoverageData]:
                 timestamp=None,
                 extra={
                     "bandwidth": row["antenna_bandwidth"],
-                    "height": row["antenna_height"],
-                    "azimuth": row["antenna_azimuth"],
-                    "mnc": row["antenna_mnc"],
+                    "height": float(row["antenna_height"]) if row["antenna_height"] != "" else None,
+                    "azimuth": float(row["antenna_azimuth"]),
+                    "mnc": int(row["antenna_mnc"]),
                     "radio": row["antenna_radio"],
                 },
             )

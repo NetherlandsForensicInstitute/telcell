@@ -3,12 +3,13 @@ import warnings
 from dataclasses import dataclass
 from datetime import datetime
 from functools import cached_property
-from typing import Any, Mapping, Tuple, Sequence, Iterator, Optional
+from typing import Any, Mapping, Tuple, Sequence, Iterator
 
 import geopy
 import geopy.distance
 import pyproj
 from pyproj import Proj, Geod, Transformer
+
 
 RD = (
     "+proj=sterea +lat_0=52.15616055555555 +lon_0=5.38763888888889 "
@@ -79,7 +80,7 @@ class Measurement:
     """
 
     coords: geopy.Point
-    timestamp: Optional[datetime]
+    timestamp: datetime
     extra: Mapping[str, Any]
 
     @property
@@ -107,7 +108,7 @@ class Measurement:
                 self.lat,
                 self.lon,
                 self.timestamp.date(),
-                *(_extra for _extra in self.extra.values()),
+                str(self.extra),
             )
         )
 

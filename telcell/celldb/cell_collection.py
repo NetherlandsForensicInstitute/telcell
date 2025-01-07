@@ -6,20 +6,10 @@ from typing import Optional, Iterable, Sized
 import geopy
 
 from telcell.cell_identity import CellIdentity
+from telcell.celldb.models import CellInfo
 
 
-class Properties(dict):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def __getattr__(self, item):
-        if item in self:
-            return self[item]
-        else:
-            return Properties()
-
-
-class CellCollection(Iterable[Properties], Sized):
+class CellCollection(Iterable[CellInfo], Sized):
     """
     Collection of cell towers in a cellular network, that may be queried by cell id (e.g. for geocoding) or by
     coordinates (e.g. reverse geocoding).
@@ -32,7 +22,7 @@ class CellCollection(Iterable[Properties], Sized):
     """
 
     @abstractmethod
-    def get(self, date: datetime.datetime, ci: CellIdentity) -> Optional[Properties]:
+    def get(self, date: datetime.datetime, ci: CellIdentity) -> Optional[CellInfo]:
         """
         Retrieve a specific antenna from database.
 

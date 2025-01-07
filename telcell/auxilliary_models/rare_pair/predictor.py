@@ -20,6 +20,7 @@ class Predictor:
 
     def __init__(self,
                  models: Mapping[Tuple[int, Bin], CoverageModel]):
+        assert all(isinstance(key[0], int) for key in models.keys())
         self.models = models
         self._bins = list(sorted(set(bin for _, bin in models.keys())))
 
@@ -40,7 +41,7 @@ class Predictor:
 
         normalized_probabilities_for_reference_area = []
         for measurement in measurements:
-            model = self.models[(measurement.extra['mnc'], bin)]
+            model = self.models[(measurement.extra['cell'].mnc, bin)]
             measurement_area = model.measurement_area(measurement)
             if measurement_area.intersect(reference_area):
                 normalized_probabilities_for_reference_area.append(
@@ -60,7 +61,7 @@ class Predictor:
         :param delta_t: the time difference between the two antenna registrations
         :returns: the probability
         """
-        model = self.models[(measurement.extra['mnc'], self.get_bin(delta_t))]
+        model = self.models[(measurement.extra['cell'].mnc, self.get_bin(delta_t))]
         return model.probabilities(measurement)
 
     def get_probability_e_h(self,

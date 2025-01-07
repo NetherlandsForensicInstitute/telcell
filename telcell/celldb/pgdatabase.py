@@ -13,12 +13,13 @@ from telcell.cell_identity import (
     EutranCellGlobalIdentity,
 )
 from . import duplicate_policy
-from .cell_collection import CellCollection, Properties
+from .cell_collection import CellCollection
+from .models import CellInfo
 from ..data.models import rd_to_point, point_to_rd
 from ..geography import Angle
 
 
-def _build_antenna(row: Tuple) -> Properties:
+def _build_antenna(row: Tuple) -> CellInfo:
     date_start, date_end, radio, mcc, mnc, lac, ci, eci, rdx, rdy, azimuth_degrees = row
     if radio == Radio.GSM.value or radio == Radio.UMTS.value:
         retrieved_ci = CellIdentity.create(
@@ -37,7 +38,7 @@ def _build_antenna(row: Tuple) -> Properties:
 
     coords = rd_to_point(rdx, rdy)
     azimuth = Angle(degrees=azimuth_degrees) if azimuth_degrees is not None else None
-    return Properties(wgs84=coords, azimuth=azimuth, cell=retrieved_ci)
+    return CellInfo(wgs84=coords, azimuth=azimuth, cell=retrieved_ci)
 
 
 def _build_cell_identity_query(ci):
@@ -110,7 +111,7 @@ class PgCollection(CellCollection):
         self._count_limit = _count_limit
         self._cur = None
 
-    def get(self, date: datetime.datetime, ci: CellIdentity) -> Optional[Properties]:
+    def get(self, date: datetime.datetime, ci: CellIdentity) -> Optional[CellInfo]:
         """
         Retrieve a specific antenna from database.
 

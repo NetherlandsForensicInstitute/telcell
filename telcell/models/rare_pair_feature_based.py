@@ -42,13 +42,14 @@ class RarePairModel(Model):
     def filter_track(track: Track, filter: Mapping) -> Track:
         measurements = track.measurements
         if 'mnc' in filter:
-            measurements = [m for m in measurements if m.extra['mnc'] in filter['mnc']]
+            measurements = [m for m in measurements if m.extra['cell'].mnc in filter['mnc']]
         return Track(measurements=measurements, device=track.device, owner=track.owner)
 
-    def predict_lr(self, track_a: Track, track_b: Track, **kwargs) \
+    def predict_lr(self, track_a: Track, track_b: Track, filter: Mapping = None, **kwargs) \
             -> Tuple[Optional[float], Optional[Mapping[str, Any]]]:
-        track_a = self.filter_track(track_a, filter=kwargs['filter'])
-        track_b = self.filter_track(track_b, filter=kwargs['filter'])
+        if filter:
+            track_a = self.filter_track(track_a, filter=filter)
+            track_b = self.filter_track(track_b, filter=filter)
         if not track_a or not track_b:
             return None, None
         switches = get_switches(track_a, track_b)
