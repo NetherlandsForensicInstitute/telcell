@@ -19,12 +19,12 @@ CREATE EXTENSION postgis;
 Create `cellsite.yaml` from the template and insert the Postgres credentials.
 
 ```sh
-cp cellsite.yaml-example cellsite.yaml
-nano cellsite.yaml
+cp utils.yaml-example utils.yaml
+nano utils.yaml
 ```
 
 ```sh
-python -m celldb --config cellsite.yaml import < celldb.csv
+python -m celldb --config utils.yaml import < celldb.csv
 ```
 
 For more information, see `celldb` documentation.
